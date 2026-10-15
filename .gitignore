@@ -1,0 +1,8 @@
+# 运行中产生的东西和业务数据，不进仓库
+__pycache__/
+*.pyc
+*.tmp
+.ledger.lock
+.提醒状态.json
+手动改动.jsonl
+接单/

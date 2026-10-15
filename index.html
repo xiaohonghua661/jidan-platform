@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>记单平台</title>
+<style>
+:root{
+  --bg:#f3f4f6;--surface:#fff;--surface-2:#f8f9fb;--hover:#f4f6ff;
+  --line:#e4e7ec;--line-2:#eef0f3;
+  --text:#101828;--text-2:#344054;--muted:#667085;--faint:#98a2b3;
+  --accent:#4f46e5;--accent-soft:#eef2ff;--accent-line:#c7d2fe;
+  --ok:#15803d;--ok-soft:#dcfce7;--ok-line:#bbf7d0;
+  --warn:#b45309;--warn-soft:#fef3c7;--warn-line:#fcd34d;
+  --info:#1d4ed8;--info-soft:#dbeafe;--info-line:#bfdbfe;
+  --idle:#475467;--idle-soft:#f2f4f7;
+  --danger:#c01048;--danger-soft:#ffe4e8;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+  --r:12px;
+  --c0:#0f766e;--c0s:#ccfbf1;--c1:#6d28d9;--c1s:#ede9fe;--c2:#c2410c;--c2s:#ffedd5;
+  --c3:#334155;--c3s:#e2e8f0;--c4:#be185d;--c4s:#fce7f3;--c5:#0e7490;--c5s:#cffafe;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0b0d12;--surface:#141821;--surface-2:#181d27;--hover:#1b2130;
+  --line:#272d39;--line-2:#1f2430;
+  --text:#e8ebf1;--text-2:#c7ccd6;--muted:#8d95a5;--faint:#646c7c;
+  --accent:#8b93ff;--accent-soft:rgba(139,147,255,.14);--accent-line:rgba(139,147,255,.4);
+  --ok:#4ade80;--ok-soft:rgba(74,222,128,.12);--ok-line:rgba(74,222,128,.32);
+  --warn:#fbbf24;--warn-soft:rgba(251,191,36,.12);--warn-line:rgba(251,191,36,.4);
+  --info:#60a5fa;--info-soft:rgba(96,165,250,.13);--info-line:rgba(96,165,250,.32);
+  --idle:#a4abb8;--idle-soft:rgba(164,171,184,.12);
+  --danger:#fb7185;--danger-soft:rgba(251,113,133,.13);
+  --shadow:none;
+  --c0:#5eead4;--c0s:rgba(45,212,191,.13);--c1:#c4b5fd;--c1s:rgba(167,139,250,.15);--c2:#fdba74;--c2s:rgba(251,146,60,.14);
+  --c3:#cbd5e1;--c3s:rgba(148,163,184,.15);--c4:#f9a8d4;--c4s:rgba(244,114,182,.14);--c5:#67e8f9;--c5s:rgba(34,211,238,.13);
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Segoe UI Variable Text","Segoe UI","Microsoft YaHei UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit}
+.page{max-width:1720px;margin:0 auto;padding:20px 24px 40px}
+
+/* 顶栏 */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:11px;background:var(--accent);color:#fff;display:grid;place-items:center;flex:none}
+h1{font-size:20px;line-height:1.2;margin:0;letter-spacing:.5px}
+.sub{color:var(--muted);font-size:12px;margin-top:2px}
+.sync{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.dot.off{background:var(--danger);box-shadow:0 0 0 3px var(--danger-soft)}
+.btn{height:30px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;font-size:13px;color:var(--text-2)}
+.btn:hover{border-color:var(--accent-line);color:var(--accent)}
+.banner{display:none;margin-bottom:12px;padding:10px 14px;border-radius:10px;background:var(--danger-soft);color:var(--danger);font-size:13px}
+.banner.show{display:block}
+
+/* 类别页签 + 搜索 */
+.row1{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tabs{display:flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:3px;box-shadow:var(--shadow);overflow-x:auto;max-width:100%;scrollbar-width:none}
+.tab{border:0;background:transparent;color:var(--text-2);padding:6px 14px;border-radius:8px;cursor:pointer;display:flex;gap:6px;align-items:baseline;white-space:nowrap}
+.tab:hover{background:var(--hover)}
+.tab .n{color:var(--faint);font-size:12px}
+.tab[aria-pressed=true]{background:var(--accent);color:#fff}
+.tab[aria-pressed=true] .n{color:rgba(255,255,255,.8)}
+.tab.zero{opacity:.5}
+.search{height:36px;width:320px;max-width:100%;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:13px;box-shadow:var(--shadow)}
+.search:focus,select:focus{outline:2px solid var(--accent-line);outline-offset:0;border-color:var(--accent)}
+
+/* 指标卡 */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:16px 0}
+.kpi{display:flex;flex-direction:column;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;text-align:left;min-width:0}
+.kpi:hover{border-color:var(--accent-line)}
+.kpi .lab{font-size:12px;color:var(--muted)}
+.kpi .val{font-size:24px;font-weight:700;line-height:1.3;margin-top:2px;white-space:nowrap}
+.kpi .val small{font-size:13px;font-weight:500;color:var(--muted);margin-left:2px}
+.kpi .hint{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi.ok .val{color:var(--ok)}.kpi.warn .val{color:var(--warn)}.kpi.danger .val{color:var(--danger)}
+.kbar{width:100%;height:6px;border-radius:999px;background:var(--line-2);overflow:hidden;margin-top:8px}
+.kbar i{display:block;height:100%;background:var(--ok);border-radius:999px}
+
+/* 布局 */
+.layout{display:grid;grid-template-columns:288px minmax(0,1fr);gap:16px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.side .card{position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 14px 8px}
+.card-h h2{font-size:15px;margin:0}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;font-size:12px;color:var(--muted);padding:4px 9px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.08),0 0 0 1px var(--line)}
+.seg .n{color:var(--faint);font-weight:400}
+
+/* 老板面板 */
+.bosses{list-style:none;margin:0;padding:2px 8px 10px;display:flex;flex-direction:column;gap:2px;overflow:auto}
+.boss{border:1px solid transparent;border-radius:10px;padding:8px 10px;cursor:pointer;outline:none}
+.boss:hover{background:var(--hover)}
+.boss:focus-visible{border-color:var(--accent-line)}
+.boss[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent-line)}
+.boss-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.boss-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.boss-name.self{color:var(--muted)}
+.boss-name.all{color:var(--text-2)}
+.boss-cnt{font-size:12px;color:var(--muted);white-space:nowrap}
+.boss-bar{height:4px;border-radius:999px;background:var(--line-2);margin:6px 0 4px;overflow:hidden}
+.boss-bar i{display:block;height:100%;background:var(--ok)}
+.boss-money{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);white-space:nowrap}
+.boss-money b{color:var(--warn);font-weight:600}
+.boss-money b.zero{color:var(--ok)}
+
+/* 表格卡 */
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+select{height:32px;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:0 8px;font:inherit;font-size:13px;cursor:pointer}
+.toggle{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;font-size:13px;color:var(--text-2)}
+.toggle[aria-pressed=true]{border-color:var(--danger);color:var(--danger);background:var(--danger-soft);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 14px 0}
+.chips[hidden]{display:none}
+.chip{display:inline-flex;align-items:center;font-size:12px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:2px 2px 2px 10px}
+.chip button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:15px;line-height:1;padding:0 7px}
+.link{border:0;background:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;padding:0 4px}
+.link:hover{color:var(--accent)}
+.tbl-wrap{position:relative}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+thead th{position:sticky;top:0;z-index:2;background:var(--surface-2);color:var(--muted);font-weight:600;font-size:12px;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;user-select:none;cursor:pointer}
+thead th:hover{color:var(--text)}
+thead th.num{text-align:right}
+th .ar{display:inline-block;width:12px;margin-left:3px;color:var(--accent);font-size:10px}
+th:not([aria-sort=ascending]):not([aria-sort=descending]):hover .ar::after{content:"↕";color:var(--faint)}
+tbody td{padding:9px 10px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+tr.row{cursor:pointer;outline:none}
+tr.row:hover td,tr.row:focus-visible td{background:var(--hover)}
+tr.row.open td{background:var(--hover);border-bottom-color:transparent}
+tr.row.rush td:first-child{box-shadow:inset 3px 0 0 var(--danger)}
+td.no{font-family:"Cascadia Mono",Consolas,ui-monospace,monospace;font-size:12.5px;font-weight:600;white-space:nowrap}
+.rush-tag{display:inline-block;margin-left:6px;padding:0 5px;border-radius:4px;background:var(--danger-soft);color:var(--danger);font-family:inherit;font-size:11px;font-weight:700;line-height:17px;vertical-align:1px}
+.fresh{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:1px}
+td.ttl{min-width:200px;max-width:440px}
+td.ttl div{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.45}
+.cat{display:inline-flex;align-items:center;height:21px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.c0{color:var(--c0);background:var(--c0s)}.c1{color:var(--c1);background:var(--c1s)}.c2{color:var(--c2);background:var(--c2s)}
+.c3{color:var(--c3);background:var(--c3s)}.c4{color:var(--c4);background:var(--c4s)}.c5{color:var(--c5);background:var(--c5s)}
+.bosslink{border:0;background:none;padding:0;cursor:pointer;color:var(--text);font-weight:500;white-space:nowrap}
+.bosslink:hover{color:var(--accent);text-decoration:underline}
+.bosslink.self{color:var(--faint);font-weight:400}
+.chn{font-size:12px;color:var(--text-2);white-space:nowrap}
+td.date{white-space:nowrap;color:var(--text-2)}
+td.num{text-align:right;white-space:nowrap}
+.money{font-weight:600}
+.money small{display:block;font-weight:400;font-size:11px;color:var(--faint);line-height:1.3}
+.muted{color:var(--faint);font-weight:400}
+td.note{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
+
+/* 进度条（每个环节一枚） */
+.steps{display:flex;gap:3px}
+.st{font-size:11px;line-height:19px;padding:0 6px;border-radius:5px;border:1px solid var(--line);color:var(--faint);white-space:nowrap}
+.st.done,.st.txt{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
+.st.txt::after{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:currentColor;margin-left:3px;vertical-align:2px}
+.st.pend{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
+.st.due{border-color:var(--warn-line);color:var(--warn);border-style:dashed}
+.st.skip{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
+.due{display:block;width:max-content;margin-top:3px;font-size:11px;font-weight:700;padding:0 6px;border-radius:5px;line-height:19px;white-space:nowrap}
+.due.hot{color:var(--danger);background:var(--danger-soft)}.due.warm{color:var(--warn);background:var(--warn-soft)}.due.cool{color:var(--muted);background:var(--idle-soft)}
+.badge{display:inline-flex;align-items:center;gap:6px;height:23px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s0{color:var(--idle);background:var(--idle-soft)}.s1{color:var(--info);background:var(--info-soft)}
+.s2{color:var(--warn);background:var(--warn-soft)}.s3{color:var(--ok);background:var(--ok-soft)}
+
+/* 展开详情 */
+tr.detail td{background:var(--surface-2);padding:14px 18px 16px;border-bottom:1px solid var(--line)}
+.dtitle{font-weight:600;font-size:14px;margin-bottom:10px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 24px}
+.k{display:block;color:var(--muted);font-size:12px}
+.owe{color:var(--warn)}
+.dstages{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.ds{display:inline-flex;gap:6px;align-items:baseline;font-size:12px;padding:3px 9px;border-radius:7px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+.ds b{font-weight:600;color:var(--text-2)}
+.ds.done,.ds.txt{border-color:var(--ok-line);color:var(--ok)}
+.ds.pend{border-color:var(--warn-line);color:var(--warn)}
+.ds.skip{border-color:var(--danger-soft);color:var(--danger)}
+/* 详情里手动改环节：每个环节一组 √ / X / 空 */
+.dst{display:inline-flex;flex-direction:column;gap:5px;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:var(--surface);min-width:92px}
+.dst-h{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-2)}
+.dst-v{font-size:11px;color:var(--muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tri{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;width:max-content}
+.tri button{border:0;background:transparent;padding:2px 10px;font-size:12px;line-height:20px;cursor:pointer;color:var(--muted)}
+.tri button+button{border-left:1px solid var(--line)}
+.tri button:hover{background:var(--hover);color:var(--text)}
+.tri button.on[data-v="1"]{background:var(--ok-soft);color:var(--ok);font-weight:700}
+.tri button.on[data-v="0"]{background:var(--danger-soft);color:var(--danger);font-weight:700}
+.tri button.on[data-v=""]{background:var(--idle-soft);color:var(--text-2);font-weight:700}
+.handtag{font-size:10px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:0 5px;line-height:16px}
+.st.hand{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.cbar{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;background:var(--warn-soft);color:var(--text);font-size:13px}
+.cbar .btn{height:28px}
+.cbar .ok{background:var(--accent);border-color:var(--accent);color:#fff}
+.cbar small{color:var(--muted);font-size:12px}
+.pen{border:0;background:transparent;color:var(--faint);cursor:pointer;font-size:12px;padding:0 2px;margin-left:auto}
+.pen:hover{color:var(--accent)}
+.dst-e{display:flex;gap:4px;align-items:center}
+.dst-e input{width:120px;height:26px;border:1px solid var(--accent-line);border-radius:6px;padding:0 6px;font:inherit;font-size:12px;background:var(--surface);color:var(--text)}
+.btn.mini{height:26px;padding:0 8px;font-size:12px}
+.btn.ok{background:var(--accent);border-color:var(--accent);color:#fff}
+.editbox{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.ef{display:flex;flex-direction:column;gap:4px}
+.ef.wide{flex:1 1 320px}
+.ef .k{display:flex;align-items:center;gap:6px}
+.ef textarea,.ef input{font:inherit;font-size:13px;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.ef textarea{resize:vertical;min-height:38px}
+.ef input[type=number]{width:110px}
+.ef textarea:focus,.ef input:focus,.dst-e input:focus{outline:2px solid var(--accent-line);border-color:var(--accent)}
+.dnote{margin-top:12px;font-size:13px}
+.dmeta{margin-top:12px;font-size:11px;color:var(--faint)}
+
+.empty{padding:48px 16px;text-align:center;color:var(--muted)}
+.empty[hidden]{display:none}
+.tfoot{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:10px 14px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--text);color:var(--surface);padding:9px 16px;border-radius:9px;font-size:13px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:1400px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .side .card{position:static;max-height:none}
+  .bosses{flex-direction:row;flex-wrap:wrap;gap:8px;padding:2px 12px 14px}
+  .boss{width:200px;border-color:var(--line)}
+}
+@media (max-width:1180px){
+  .tbl-wrap{overflow-x:auto}
+  thead th{position:static}
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:640px){
+  .page{padding:16px 16px 32px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi .val{font-size:20px}
+  .search{width:100%}
+  .boss{width:calc(50% - 4px)}
+  .toolbar select{flex:1 1 30%}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
+      <div><h1>记单平台</h1><div class="sub" id="meta">数据来自各员工目录的 订单库</div></div>
+    </div>
+    <div class="sync"><span class="dot" id="dot"></span><span id="stamp">连接中…</span><button class="btn" id="remindBtn" title="现在弹出今日待办的提醒窗口">提醒</button><button class="btn" id="refresh" title="立即刷新">刷新</button></div>
+  </header>
+  <div class="banner" id="banner"></div>
+
+  <div class="row1">
+    <nav class="tabs" id="tabs" aria-label="类别"></nav>
+    <input id="q" class="search" type="search" placeholder="搜 单号 / 题目 / 老板 / 备注　（按 / 键聚焦）" autocomplete="off">
+  </div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <div class="layout">
+    <aside class="side">
+      <div class="card">
+        <div class="card-h"><h2>老板</h2><div class="seg" id="bossSort" aria-label="老板排序"></div></div>
+        <ul class="bosses" id="bosses"></ul>
+      </div>
+    </aside>
+    <main class="card">
+      <div class="toolbar">
+        <div class="seg" id="status" aria-label="状态"></div>
+        <select id="fCh" aria-label="渠道"></select>
+        <select id="fMonth" aria-label="月份"></select>
+        <select id="fWeek" aria-label="结款周"></select>
+        <button class="toggle" id="rush" aria-pressed="false">只看急单</button>
+      </div>
+      <div class="chips" id="chips" hidden></div>
+      <div class="tbl-wrap">
+        <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+        <div class="empty" id="empty" hidden>没有符合条件的单　<button class="link" data-clear="all">清除筛选</button></div>
+      </div>
+      <div class="tfoot">
+        <span id="count"></span>
+        <span class="legend">进度：<span class="st done">完成</span><span class="st txt">有记录</span><span class="st pend">待定</span><span class="st due">待结</span><span class="st">未做</span><span class="st skip">不做</span>　点行看详情，点老板名只看他的单</span>
+        <button class="btn" id="copy" title="按当前筛选和排序复制，可直接粘进 Excel 或微信">复制当前列表</button>
+      </div>
+    </main>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+// 记单平台看板：只读。数据由 ledger.py 写入，这里每 15 秒拉一次 /api/orders。
+const $ = s => document.querySelector(s);
+const COLL = new Intl.Collator("zh-Hans-CN", {numeric: true, sensitivity: "base"});
+const STATUS = ["未开始", "进行中", "待结款", "已结款"];
+let D = null, ROWS = [], CUR = [], lastTxt = "", HAND = {};
+const TRI = {"1": "完成", "0": "不做", "": "未做"};
+const triKey = v => { const s = stState(v); return s === "done" || s === "txt" ? "1" : s === "skip" ? "0" : s === "todo" ? "" : null; };
+const showV = v => v === true ? "完成" : v === false ? "不做" : (v == null || v === "") ? "未做" : String(v);
+const S = {cat: "", boss: null, ch: "", month: "", week: "", status: "", rush: false, q: "",
+           sort: {k: "状态", d: 1}, bossSort: "未结", open: new Set(),
+           pending: null, stext: null, drafts: {}};   // 待确认的勾、正在写字的环节、没保存的输入
+// 排序习惯记在本浏览器（存不了也不影响使用）
+try {
+  const v = JSON.parse(localStorage.getItem("jd.sort") || "null");
+  if (v && v.sort) S.sort = v.sort;
+  if (v && v.bossSort) S.bossSort = v.bossSort;
+} catch (e) {}
+function saveSort() { try { localStorage.setItem("jd.sort", JSON.stringify({sort: S.sort, bossSort: S.bossSort})); } catch (e) {} }
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const yuan = n => "¥" + Number(n || 0).toLocaleString("zh-CN", {maximumFractionDigits: 2});
+const num = n => n == null ? "0" : Number(n).toLocaleString("zh-CN", {maximumFractionDigits: 2});
+const pad = n => String(n).padStart(2, "0");
+
+// ---------- 日期与结款周（周日~周六，周六结款） ----------
+function parseD(s) { return s && /^\d{8}$/.test(s) ? new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)) : null; }
+function weekInfo(d) {
+  if (!d) return null;
+  const e = new Date(d); e.setDate(d.getDate() + (6 - d.getDay()));
+  const b = new Date(e); b.setDate(e.getDate() - 6);
+  return {label: pad(b.getMonth() + 1) + pad(b.getDate()) + "-" + pad(e.getMonth() + 1) + pad(e.getDate()),
+          key: e.getFullYear() * 10000 + (e.getMonth() + 1) * 100 + e.getDate()};
+}
+const THIS_WEEK = weekInfo(new Date()).label;
+const TODAY = (() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); })();
+// 期限小标：只对还没干完的单显示
+function dueTag(x) {
+  const d = x.dueDays;
+  if (d == null || x.status >= 2) return "";
+  const r = x.r.期限;
+  const [t, c] = d < 0 ? [`逾期${-d}天`, "hot"] : d === 0 ? ["今天到期", "hot"] : d === 1 ? ["明天到期", "hot"]
+    : d <= 3 ? [`剩${d}天`, "warm"] : [`${r.slice(4, 6)}-${r.slice(6)} 到期`, "cool"];
+  return `<span class="due ${c}" title="期限 ${r.slice(0, 4)}-${r.slice(4, 6)}-${r.slice(6)}">${t}</span>`;
+}
+function showDate(s) {
+  const d = parseD(s); if (!d) return "";
+  return (d.getFullYear() === new Date().getFullYear() ? "" : d.getFullYear() + "-") + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+}
+
+// ---------- 环节状态 ----------
+function stState(v) {
+  if (v === true) return "done";
+  if (v === false) return "skip";
+  if (v == null || v === "") return "todo";
+  return /待|未|等|暂/.test(String(v)) ? "pend" : "txt";   // 日期、快递号算完成；待定算没定
+}
+function stText(v) {
+  if (v === true) return "完成";
+  if (v === false) return "不做";
+  if (v == null || v === "") return "未做";
+  const s = String(v);
+  return /^\d{8}$/.test(s) ? s.slice(0, 4) + "-" + s.slice(4, 6) + "-" + s.slice(6) : s;
+}
+
+// ---------- 整理一遍数据：状态、金额、老板 ----------
+// 类别按配置顺序（JSON 里「8086」这种数字键会被浏览器排到最前）
+const catKeys = () => (D.类别顺序 || Object.keys(D.类别 || {})).filter(k => (D.类别 || {})[k]);
+function prep() {
+  const cats = D.类别 || {}, keys = catKeys(), now = Date.now();
+  HAND = {};   // 看板手动改过、还没跟用户确认的环节
+  (D.手动改动 || []).forEach(e => { HAND[`${e.类别}|${e.单号}|${e.字段 ? "#" + e.字段 : e.环节}`] = e; });
+  ROWS = (D.订单 || []).map(r => {
+    const env = r.环节 || {};
+    const stages = (cats[r.类别] && cats[r.类别].环节) || Object.keys(env);
+    let need = 0, done = 0, any = false, work = true, hasWork = false;
+    for (const s of stages) {
+      const st = stState(env[s]);
+      if (st !== "skip") need++;
+      if (st === "done" || st === "txt") { done++; any = true; }
+      if (s !== "结款") { hasWork = true; if (st === "todo" || st === "pend") work = false; }
+    }
+    const paid = env.结款 === true;
+    const status = paid ? 3 : (hasWork && work ? 2 : (any ? 1 : 0));
+    const total = r.价格 != null ? r.价格 : (r.定金 != null || r.尾款 != null ? (r.定金 || 0) + (r.尾款 || 0) : null);
+    const got = paid ? (total || 0) : (r.价格 != null ? 0 : (r.定金 || 0));   // 定金按接单时已收算
+    const boss = r.老板 ?? r.客户 ?? "";
+    const w = weekInfo(parseD(r.日期));
+    const upd = Date.parse(r.更新 || "");
+    const due = parseD(r.期限);
+    return {r, stages, need, done, pct: need ? done / need : 0, status, total,
+            dueDays: due ? Math.round((due - TODAY) / 864e5) : null,
+            got, owe: Math.max((total || 0) - got, 0), boss: boss || "",
+            week: w ? w.label : "", weekKey: w ? w.key : 0,
+            fresh: r.写入者 !== "import" && upd && now - upd < 864e5,
+            catIdx: Math.max(keys.indexOf(r.类别), 0),
+            hay: [r.单号, r.题目, boss || "自己", r.工程师, r.备注, r.渠道].join(" ").toLowerCase()};
+  });
+}
+
+// ---------- 筛选（skip 用来算各筛选项自己的计数） ----------
+function match(x, skip) {
+  const r = x.r;
+  if (skip !== "cat" && S.cat && r.类别 !== S.cat) return false;
+  if (skip !== "boss" && S.boss !== null && x.boss !== S.boss) return false;
+  if (S.ch && r.渠道 !== S.ch) return false;
+  if (S.month && r.月 !== S.month) return false;
+  if (S.week && x.week !== S.week) return false;
+  if (skip !== "status" && S.status) {
+    if (S.status === "unpaid" ? x.status === 3 : x.status !== +S.status) return false;
+  }
+  if (S.rush && !r.急单) return false;
+  if (S.q && !x.hay.includes(S.q)) return false;
+  return true;
+}
+
+// ---------- 排序 ----------
+const COLS = [
+  {k: "单号", get: x => x.r.单号},
+  {k: "题目", get: x => x.r.题目 || ""},
+  {k: "类别", get: x => x.catIdx, n: 1, hideWhenCat: 1},
+  {k: "老板", get: x => x.boss},
+  {k: "渠道", get: x => x.r.渠道 || ""},
+  {k: "日期", get: x => x.r.日期 || "", first: -1},
+  {k: "金额", get: x => x.total, n: 1, first: -1, cls: "num"},
+  {k: "进度", get: x => x.pct, n: 1, first: -1},
+  {k: "状态", get: x => x.status, n: 1},
+  {k: "备注", get: x => x.r.备注 || ""},
+];
+const COL = k => COLS.find(c => c.k === k);
+function by(col, d) {
+  return (a, b) => {
+    const va = col.get(a), vb = col.get(b);
+    const ea = va === "" || va == null, eb = vb === "" || vb == null;
+    if (ea || eb) return ea && eb ? 0 : (ea ? 1 : -1);   // 空值（含「自己」）总排最后
+    return (col.n ? va - vb : COLL.compare(String(va), String(vb))) * d;
+  };
+}
+function sortRows(list) {
+  const p = by(COL(S.sort.k) || COL("状态"), S.sort.d);
+  const st = by(COL("状态"), 1), dt = by(COL("日期"), -1), no = by(COL("单号"), 1);
+  const rush = (a, b) => S.sort.k === "状态" ? (b.r.急单 ? 1 : 0) - (a.r.急单 ? 1 : 0) : 0;
+  const due = by({get: x => x.status < 2 ? x.dueDays : null, n: 1}, 1);   // 同状态里期限近的排前
+  return list.sort((a, b) => p(a, b) || rush(a, b) || due(a, b) || st(a, b) || dt(a, b) || no(a, b));
+}
+
+// ---------- 渲染 ----------
+function render() {
+  if (!D) return;
+  renderTabs(); renderStatus(); renderBosses(); renderChips();
+  CUR = sortRows(ROWS.filter(x => match(x)));
+  renderKpis(CUR);
+  const cols = COLS.filter(c => !(c.hideWhenCat && S.cat));
+  $("#thead").innerHTML = "<tr>" + cols.map(c => {
+    const on = S.sort.k === c.k;
+    return `<th class="${c.cls || ""}" data-k="${c.k}" aria-sort="${on ? (S.sort.d > 0 ? "ascending" : "descending") : "none"}">${c.k}<span class="ar">${on ? (S.sort.d > 0 ? "▲" : "▼") : ""}</span></th>`;
+  }).join("") + "</tr>";
+  $("#tbody").innerHTML = CUR.map(x => rowHtml(x, cols)).join("");
+  $("#empty").hidden = CUR.length > 0;
+  $("#count").textContent = `显示 ${CUR.length} / ${ROWS.length} 单`;
+}
+
+function renderTabs() {
+  const base = ROWS.filter(x => match(x, "cat")), cats = D.类别 || {};
+  const items = [["", "全部", base.length], ...catKeys().map(k => [k, cats[k].名称 || k, base.filter(x => x.r.类别 === k).length])];
+  $("#tabs").innerHTML = items.map(([k, n, c]) =>
+    `<button class="tab${c ? "" : " zero"}" data-cat="${esc(k)}" aria-pressed="${S.cat === k}">${esc(n)}<span class="n">${c}</span></button>`).join("");
+}
+
+function renderStatus() {
+  const base = ROWS.filter(x => match(x, "status"));
+  const c = k => base.filter(x => x.status === k).length;
+  const items = [["", "全部", base.length], ["unpaid", "未结清", base.length - c(3)],
+                 ["0", "未开始", c(0)], ["1", "进行中", c(1)], ["2", "待结款", c(2)], ["3", "已结款", c(3)]];
+  $("#status").innerHTML = items.map(([k, n, v]) =>
+    `<button data-st="${k}" aria-pressed="${S.status === k}">${n} <span class="n">${v}</span></button>`).join("");
+}
+
+function renderBosses() {
+  const base = ROWS.filter(x => match(x, "boss")), m = new Map();
+  for (const x of base) {
+    let b = m.get(x.boss);
+    if (!b) m.set(x.boss, b = {name: x.boss, n: 0, total: 0, owe: 0, due: 0});
+    b.n++; b.total += x.total || 0; b.owe += x.owe; if (x.status === 2) b.due++;
+  }
+  const cmp = {
+    "未结": (a, b) => b.owe - a.owe || b.n - a.n,
+    "单数": (a, b) => b.n - a.n || b.owe - a.owe,
+    "金额": (a, b) => b.total - a.total || b.n - a.n,
+    "名称": (a, b) => (a.name === "") - (b.name === "") || COLL.compare(a.name, b.name),
+  }[S.bossSort] || ((a, b) => b.owe - a.owe);
+  const list = [...m.values()].sort((a, b) => cmp(a, b) || COLL.compare(a.name || "~", b.name || "~"));
+  if (S.boss !== null && !m.has(S.boss)) list.push({name: S.boss, n: 0, total: 0, owe: 0, due: 0});
+  const all = {n: base.length, total: base.reduce((s, x) => s + (x.total || 0), 0), owe: base.reduce((s, x) => s + x.owe, 0), due: 0};
+  const li = (b, isAll) => {
+    const on = isAll ? S.boss === null : S.boss === b.name;
+    const pct = b.total ? Math.round((b.total - b.owe) / b.total * 100) : 100;
+    const nm = isAll ? "全部老板" : (b.name || "自己");
+    const cls = isAll ? " all" : (b.name ? "" : " self");
+    return `<li class="boss" role="button" tabindex="0" ${isAll ? 'data-all="1"' : `data-boss="${esc(b.name)}"`} aria-pressed="${on}" title="${isAll ? "看全部" : "只看「" + esc(nm) + "」的单，再点取消"}">
+      <div class="boss-top"><span class="boss-name${cls}">${esc(nm)}</span><span class="boss-cnt">${b.n} 单${b.due ? ` · 待结 ${b.due}` : ""}</span></div>
+      <div class="boss-bar"><i style="width:${pct}%"></i></div>
+      <div class="boss-money"><span>未结 <b class="${b.owe ? "" : "zero"}">${yuan(b.owe)}</b></span><span>共 ${yuan(b.total)}</span></div></li>`;
+  };
+  $("#bosses").innerHTML = li(all, true) + list.map(b => li(b, false)).join("");
+  $("#bossSort").innerHTML = ["未结", "单数", "金额", "名称"].map(k =>
+    `<button data-bs="${k}" aria-pressed="${S.bossSort === k}" title="按${k}排">${k}</button>`).join("");
+}
+
+function renderChips() {
+  const cats = D.类别 || {}, chips = [];
+  if (S.cat) chips.push(["cat", "类别：" + ((cats[S.cat] || {}).名称 || S.cat)]);
+  if (S.boss !== null) chips.push(["boss", "老板：" + (S.boss || "自己")]);
+  if (S.ch) chips.push(["ch", "渠道：" + S.ch]);
+  if (S.month) chips.push(["month", `月份：${S.month.slice(0, 4)}年${+S.month.slice(4)}月`]);
+  if (S.week) chips.push(["week", "结款周：" + S.week]);
+  if (S.status) chips.push(["status", "状态：" + (S.status === "unpaid" ? "未结清" : STATUS[+S.status])]);
+  if (S.rush) chips.push(["rush", "只看急单"]);
+  if (S.q) chips.push(["q", "搜索：" + $("#q").value.trim()]);
+  $("#chips").innerHTML = chips.map(([k, t]) => `<span class="chip">${esc(t)}<button data-clear="${k}" aria-label="去掉这个筛选">×</button></span>`).join("")
+    + (chips.length > 1 ? '<button class="link" data-clear="all">清除全部</button>' : "");
+  $("#chips").hidden = !chips.length;
+}
+
+function renderKpis(list) {
+  const sum = (a, f) => a.reduce((s, x) => s + (f(x) || 0), 0);
+  const total = sum(list, x => x.total), got = sum(list, x => x.got), owe = sum(list, x => x.owe);
+  const cnt = k => list.filter(x => x.status === k).length;
+  const due = list.filter(x => x.status === 2);
+  const rushOpen = list.filter(x => x.r.急单 && x.status < 2).length;
+  const pct = total ? Math.round(got / total * 100) : 0;
+  $("#kpis").innerHTML = `
+    <button class="kpi" data-kpi="all" title="看全部状态"><span class="lab">订单</span><span class="val">${list.length}<small>单</small></span><span class="hint">进行中 ${cnt(1)} · 未开始 ${cnt(0)}</span></button>
+    <button class="kpi" data-kpi="all" title="看全部状态"><span class="lab">总价</span><span class="val">${yuan(total)}</span><span class="hint">平均每单 ${list.length ? yuan(Math.round(total / list.length)) : "—"}</span></button>
+    <button class="kpi ok" data-kpi="paid" title="只看已结款"><span class="lab">已结账</span><span class="val">${yuan(got)}</span><span class="kbar"><i style="width:${pct}%"></i></span><span class="hint">占总价 ${pct}%（定金按已收算）</span></button>
+    <button class="kpi warn" data-kpi="unpaid" title="只看未结清"><span class="lab">未结账</span><span class="val">${yuan(owe)}</span><span class="hint">其中待结款 ${due.length} 单 ${yuan(sum(due, x => x.owe))}，可以催了</span></button>
+    <button class="kpi${rushOpen ? " danger" : ""}" data-kpi="rush" title="只看急单"><span class="lab">急单 · 没做完</span><span class="val">${rushOpen}<small>单</small></span><span class="hint">${S.rush ? "再点一下取消" : "点一下只看急单"}</span></button>`;
+}
+
+function steps(x) {
+  const env = x.r.环节 || {};
+  return '<div class="steps">' + x.stages.map(s => {
+    let st = stState(env[s]);
+    if (s === "结款" && st === "todo" && x.status === 2) st = "due";
+    const hand = HAND[`${x.r.类别}|${x.r.单号}|${s}`];
+    const tip = s + "：" + (st === "due" ? "活干完了，等结款" : stText(env[s])) + (hand ? "（看板手动改的，等 AI 跟你确认）" : "");
+    return `<span class="st ${st}${hand ? " hand" : ""}" title="${esc(tip)}">${esc(s)}</span>`;
+  }).join("") + "</div>";
+}
+
+// 「手动」小标：看板上改过、还没跟用户确认
+function handTag(key, field) {
+  const h = HAND[key];
+  if (!h) return "";
+  const f = v => field ? (v == null || v === "" ? "空" : String(v)) : showV(v);
+  return `<span class="handtag" title="看板手动 ${esc(h.时间.slice(5, 16).replace("T", " "))}：${esc(f(h.旧值))} → ${esc(f(h.新值))}，等 AI 跟你确认">手动</span>`;
+}
+const draft = (key, cur) => (key in S.drafts ? S.drafts[key] : cur);
+
+// 详情里的手动改环节：每个环节一组 √ / X / 空（点了先确认再改），✎ 可以写字（日期、快递号…）
+function stageEditor(x) {
+  const r = x.r, env = r.环节 || {}, base = `${r.类别}|${r.单号}`;
+  const attrs = s => `data-tcat="${esc(r.类别)}" data-tno="${esc(r.单号)}" data-tstage="${esc(s)}"`;
+  return x.stages.map(s => {
+    const v = env[s], st = stState(v), on = triKey(v), key = `${base}|${s}`;
+    const editing = S.stext && S.stext.cat === r.类别 && S.stext.no === r.单号 && S.stext.stage === s;
+    const txt = st === "txt" || st === "pend" ? stText(v) : "";
+    return `<div class="dst"><div class="dst-h">${esc(s)}${handTag(key)}<button class="pen" data-sedit ${attrs(s)} title="在这一格写字（日期、快递号、待定…）">✎</button></div>`
+      + (editing
+        ? `<div class="dst-e"><input data-draft="${esc(key)}" value="${esc(draft(key, typeof v === "string" ? v : ""))}" placeholder="日期、快递号…" maxlength="60">`
+          + `<button class="btn mini ok" data-ssave ${attrs(s)}>保存</button><button class="btn mini" data-scancel ${attrs(s)}>取消</button></div>`
+        : (txt ? `<div class="dst-v" title="${esc(txt)}">${esc(txt)}</div>` : ""))
+      + `<div class="tri">${[["1", "√"], ["0", "X"], ["", "空"]].map(([k, l]) =>
+          `<button data-tri ${attrs(s)} data-v="${k}" class="${on === k ? "on" : ""}" title="改成「${TRI[k]}」">${l}</button>`).join("")}</div></div>`;
+  }).join("");
+}
+
+// 详情里改备注、期限、价格（定金尾款的单改定金、尾款）
+function fieldEditor(x) {
+  const r = x.r, base = `${r.类别}|${r.单号}`, ch = (D.渠道 || {})[r.渠道] || {};
+  const money = ch.计价 === "定金尾款" || (r.价格 == null && (r.定金 != null || r.尾款 != null)) ? ["定金", "尾款"] : ["价格"];
+  const k = f => `${base}|#${f}`;
+  const due = r.期限 ? `${r.期限.slice(0, 4)}-${r.期限.slice(4, 6)}-${r.期限.slice(6)}` : "";
+  return `<div class="editbox">
+    <label class="ef wide"><span class="k">备注${handTag(k("备注"), 1)}</span><textarea data-draft="${esc(k("备注"))}" rows="2" maxlength="200" placeholder="写点什么，比如：板子周五到；客户要先看视频">${esc(draft(k("备注"), r.备注 || ""))}</textarea></label>
+    <label class="ef"><span class="k">期限${handTag(k("期限"), 1)}</span><input type="date" data-draft="${esc(k("期限"))}" value="${esc(draft(k("期限"), due))}"></label>
+    ${money.map(f => `<label class="ef"><span class="k">${f}${handTag(k(f), 1)}</span><input type="number" min="0" step="1" data-draft="${esc(k(f))}" value="${esc(draft(k(f), r[f] ?? ""))}" placeholder="元"></label>`).join("")}
+    <div class="ef act"><button class="btn ok" data-fsave data-tcat="${esc(r.类别)}" data-tno="${esc(r.单号)}">保存修改</button></div>
+  </div>`;
+}
+
+function confirmBar(x) {
+  const p = S.pending;
+  if (!p || p.cat !== x.r.类别 || p.no !== x.r.单号) return "";
+  return `<div class="cbar">把 ${esc(p.no)} 的「${esc(p.stage)}」从「${esc(showV((x.r.环节 || {})[p.stage]))}」改成「${TRI[p.v]}」？`
+    + `<button class="btn ok" data-confirm="yes">确定</button><button class="btn" data-confirm="no">取消</button>`
+    + `<small>改完记一笔「看板手动」，下次 AI 跟你对话时会问是不是你改的</small></div>`;
+}
+
+function rowHtml(x, cols) {
+  const r = x.r, cats = D.类别 || {}, open = S.open.has(r.id);
+  const noNumber = r.题目 && r.单号 === r.题目;
+  const cell = {
+    单号: `<td class="no">${noNumber ? '<span class="muted">无单号</span>' : esc(r.单号)}${r.急单 ? '<span class="rush-tag">急</span>' : ""}${x.fresh ? '<span class="fresh" title="24 小时内有更新"></span>' : ""}</td>`,
+    题目: `<td class="ttl"><div title="${esc(r.题目)}">${esc(r.题目 || "")}</div></td>`,
+    类别: `<td><span class="cat c${x.catIdx % 6}">${esc((cats[r.类别] || {}).名称 || r.类别)}</span></td>`,
+    老板: `<td><button class="bosslink${x.boss ? "" : " self"}" data-boss="${esc(x.boss)}" title="只看这个老板的单">${x.boss ? esc(x.boss) : "自己"}</button></td>`,
+    渠道: `<td><span class="chn">${esc(r.渠道 || "")}</span></td>`,
+    日期: `<td class="date" title="${r.日期 ? "结款周 " + x.week : "没填日期"}">${r.日期 ? showDate(r.日期) : '<span class="muted">—</span>'}</td>`,
+    金额: `<td class="num money">${x.total == null ? '<span class="muted">—</span>' : yuan(x.total)}${r.价格 == null && (r.定金 != null || r.尾款 != null) ? `<small>定 ${num(r.定金)} + 尾 ${num(r.尾款)}</small>` : ""}</td>`,
+    进度: `<td>${steps(x)}</td>`,
+    状态: `<td><span class="badge s${x.status}">${STATUS[x.status]}</span>${dueTag(x)}</td>`,
+    备注: `<td class="note" title="${esc(r.备注)}">${esc(r.备注 || "")}</td>`,
+  };
+  return `<tr class="row${r.急单 ? " rush" : ""}${open ? " open" : ""}" data-id="${esc(r.id)}" tabindex="0">${cols.map(c => cell[c.k]).join("")}</tr>`
+       + (open ? detailHtml(x, cols.length) : "");
+}
+
+function detailHtml(x, span) {
+  const r = x.r, cats = D.类别 || {}, ch = (D.渠道 || {})[r.渠道] || {}, env = r.环节 || {};
+  const kv = (k, v) => `<div><span class="k">${k}</span>${v}</div>`;
+  const money = r.价格 != null ? `${yuan(r.价格)}（一口价）`
+    : `定金 ${yuan(r.定金)} + 尾款 ${yuan(r.尾款)} = ${yuan(x.total)}`;
+  return `<tr class="detail"><td colspan="${span}">
+    <div class="dtitle">${esc(r.题目 || r.单号)}</div>
+    <div class="dgrid">
+      ${kv("单号", esc(r.单号))}
+      ${kv("类别 · 渠道", `${esc((cats[r.类别] || {}).名称 || r.类别)} · ${esc(r.渠道 || "")}${ch.计价 ? "（" + esc(ch.计价) + "）" : ""}`)}
+      ${kv("老板", x.boss ? esc(x.boss) : "自己")}
+      ${kv("工程师", esc(r.工程师 || "—"))}
+      ${kv("日期", r.日期 ? `${esc(stText(r.日期))}　结款周 ${x.week}` : "—")}
+      ${kv("期限", r.期限 ? esc(stText(r.期限)) + (x.status < 2 ? dueTag(x) : "") : "—")}
+      ${kv("账本月", r.月 ? esc(r.月.slice(0, 4) + "-" + r.月.slice(4)) : "—")}
+      ${kv("金额", money)}
+      ${kv("未结账", x.owe ? `<b class="owe">${yuan(x.owe)}</b>` : "¥0")}
+    </div>
+    <div class="dstages">${stageEditor(x)}</div>
+    ${confirmBar(x)}
+    ${fieldEditor(x)}
+    <div class="dmeta">更新 ${esc((r.更新 || "").replace("T", " "))} · 写入者 ${esc(r.写入者 || "—")} · ${esc(r.id || "")}</div>
+  </td></tr>`;
+}
+
+// ---------- 下拉框 ----------
+function fillSel(el, opts, cur, allLabel) {
+  el.innerHTML = `<option value="">${allLabel}</option>` + opts.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
+  el.value = opts.some(o => o[0] === cur) ? cur : "";
+  return el.value;
+}
+function fillSelects() {
+  const chans = [...new Set([...Object.keys(D.渠道 || {}), ...ROWS.map(x => x.r.渠道).filter(Boolean)])];
+  S.ch = fillSel($("#fCh"), chans.map(c => [c, c]), S.ch, "全部渠道");
+  const months = [...new Set(ROWS.map(x => x.r.月).filter(Boolean))].sort().reverse();
+  S.month = fillSel($("#fMonth"), months.map(m => [m, `${m.slice(0, 4)}年${+m.slice(4)}月`]), S.month, "全部月份");
+  const wk = new Map();
+  ROWS.forEach(x => { if (x.week) wk.set(x.week, x.weekKey); });
+  const weeks = [...wk].sort((a, b) => b[1] - a[1]).map(([w]) => [w, w + (w === THIS_WEEK ? "（本周）" : "")]);
+  S.week = fillSel($("#fWeek"), weeks, S.week, "全部结款周");
+}
+
+// ---------- 拉数据 ----------
+function toast(t) {
+  const el = $("#toast"); el.textContent = t; el.classList.add("show");
+  clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove("show"), 1800);
+}
+function setConn(ok, msg) {
+  $("#dot").classList.toggle("off", !ok);
+  const b = $("#banner");
+  b.classList.toggle("show", !ok);
+  if (!ok) b.textContent = msg || "看板服务没响应：启动窗口可能被关了，双击「启动记单平台.bat」重新打开。";
+}
+async function load(manual) {
+  try {
+    const res = await fetch("/api/orders", {cache: "no-store"});
+    const txt = await res.text();
+    if (!res.ok) { let m = txt; try { m = JSON.parse(txt).错误 || txt; } catch (e) {} throw new Error("读数据出错：" + m); }
+    setConn(true);
+    // 有没保存的输入时先不刷新表格，免得把正在写的字冲掉（保存或放弃后再刷）
+    if (txt !== lastTxt && !Object.keys(S.drafts).length) { lastTxt = txt; D = JSON.parse(txt); prep(); fillSelects(); render(); }
+    const t = new Date();
+    $("#stamp").textContent = `已同步 ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())} · 每 15 秒自动刷新`;
+    const last = ROWS.filter(x => x.r.写入者 !== "import").sort((a, b) => (b.r.更新 || "").localeCompare(a.r.更新 || ""))[0];
+    const nHand = (D.手动改动 || []).length;
+    $("#meta").textContent = `共 ${ROWS.length} 单` + (last ? ` · 最近写入 ${last.r.更新.slice(5, 16).replace("T", " ")}（${last.r.写入者}，${last.r.单号}）` : "")
+      + (nHand ? ` · 看板手动改了 ${nHand} 处，等 AI 跟你确认` : "") + " · 数据在各员工目录的 订单库";
+    if (manual) toast("已刷新");
+  } catch (e) {
+    setConn(false, e.message && e.message.startsWith("读数据出错") ? e.message : "");
+  }
+}
+
+// ---------- 交互 ----------
+function clearFilter(k) {
+  if (k === "all") { Object.assign(S, {cat: "", boss: null, ch: "", month: "", week: "", status: "", rush: false, q: ""}); $("#q").value = ""; }
+  else if (k === "boss") S.boss = null;
+  else if (k === "rush") S.rush = false;
+  else if (k === "q") { S.q = ""; $("#q").value = ""; }
+  else S[k] = "";
+  syncControls(); render();
+}
+function syncControls() {
+  $("#fCh").value = S.ch; $("#fMonth").value = S.month; $("#fWeek").value = S.week;
+  $("#rush").setAttribute("aria-pressed", S.rush);
+}
+function pickBoss(name) { S.boss = S.boss === name ? null : name; render(); }
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-sedit],[data-ssave],[data-scancel],[data-fsave],[data-tri],[data-confirm],[data-cat],[data-st],[data-bs],[data-clear],[data-kpi],.bosslink,.boss,th[data-k],tr.row");
+  if (!t) return;
+  if (t.matches("[data-sedit]")) {   // 打开某个环节的写字框
+    const d = t.dataset;
+    S.stext = {cat: d.tcat, no: d.tno, stage: d.tstage};
+    render();
+    const inp = document.querySelector(".dst-e input");
+    if (inp) { inp.focus(); inp.select(); }
+  }
+  else if (t.matches("[data-scancel]")) { const d = t.dataset; delete S.drafts[`${d.tcat}|${d.tno}|${d.tstage}`]; S.stext = null; render(); }
+  else if (t.matches("[data-ssave]")) {
+    const d = t.dataset, key = `${d.tcat}|${d.tno}|${d.tstage}`;
+    const val = key in S.drafts ? S.drafts[key] : t.parentElement.querySelector("input").value;
+    apiSet({类别: d.tcat, 单号: d.tno, 环节: d.tstage, 文本: val})
+      .then(() => { delete S.drafts[key]; S.stext = null; afterSave(`已改：${d.tno}「${d.tstage}」→ ${val.trim() || "未做"}`); })
+      .catch(err => toast("没改成：" + err.message));
+  }
+  else if (t.matches("[data-fsave]")) saveFields(t.dataset.tcat, t.dataset.tno);
+  else if (t.matches("[data-tri]")) {
+    const d = t.dataset, x = ROWS.find(x => x.r.类别 === d.tcat && x.r.单号 === d.tno);
+    if (!x || triKey((x.r.环节 || {})[d.tstage]) === d.v) return;   // 没变化
+    S.pending = {cat: d.tcat, no: d.tno, stage: d.tstage, v: d.v};
+    render();
+  }
+  else if (t.matches("[data-confirm]")) {
+    const p = S.pending;
+    S.pending = null;
+    if (t.dataset.confirm !== "yes" || !p) { render(); return; }
+    apiSet({类别: p.cat, 单号: p.no, 环节: p.stage, 值: TRI[p.v]})
+      .then(() => afterSave(`已改：${p.no}「${p.stage}」→ ${TRI[p.v]}`))
+      .catch(err => { toast("没改成：" + err.message); render(); });
+  }
+  else if (t.matches("[data-cat]")) { S.cat = t.dataset.cat; render(); }
+  else if (t.matches("[data-st]")) { S.status = t.dataset.st; render(); }
+  else if (t.matches("[data-bs]")) { S.bossSort = t.dataset.bs; saveSort(); render(); }
+  else if (t.matches("[data-clear]")) clearFilter(t.dataset.clear);
+  else if (t.matches("[data-kpi]")) {
+    const k = t.dataset.kpi;
+    if (k === "rush") S.rush = !S.rush;
+    else S.status = k === "paid" ? "3" : k === "unpaid" ? "unpaid" : "";
+    syncControls(); render();
+  }
+  else if (t.matches(".bosslink")) pickBoss(t.dataset.boss);
+  else if (t.matches(".boss")) { if (t.dataset.all) { S.boss = null; render(); } else pickBoss(t.dataset.boss); }
+  else if (t.matches("th[data-k]")) {
+    const k = t.dataset.k;
+    S.sort = S.sort.k === k ? {k, d: -S.sort.d} : {k, d: COL(k).first || 1};
+    saveSort(); render();
+  }
+  else if (t.matches("tr.row")) {
+    if (getSelection().toString()) return;   // 在选字就别折叠
+    const id = t.dataset.id;
+    S.open.has(id) ? S.open.delete(id) : S.open.add(id);
+    render();
+  }
+});
+document.addEventListener("keydown", e => {
+  const t = e.target;
+  if ((e.key === "Enter" || e.key === " ") && t.matches && t.matches(".boss,tr.row")) { e.preventDefault(); t.click(); }
+  else if (e.key === "Enter" && t.matches && t.matches(".dst-e input")) { e.preventDefault(); t.parentElement.querySelector("[data-ssave]").click(); }
+  else if (e.key === "/" && !["INPUT", "SELECT", "TEXTAREA"].includes(t.tagName)) { e.preventDefault(); $("#q").focus(); }
+  else if (e.key === "Escape" && t.id === "q") { clearFilter("q"); }
+});
+$("#q").addEventListener("input", e => { S.q = e.target.value.trim().toLowerCase(); render(); });
+// 详情里正在写的字先存草稿，重画表格时不会丢
+document.addEventListener("input", e => { const k = e.target.dataset && e.target.dataset.draft; if (k) S.drafts[k] = e.target.value; });
+
+function apiSet(body) {
+  return fetch("/api/set", {method: "POST", headers: {"X-Jidan": "1", "Content-Type": "application/json"}, body: JSON.stringify(body)})
+    .then(res => res.json().catch(() => ({})).then(j => {
+      if (!res.ok) throw new Error(j.错误 || "看板还是旧版，关掉黑窗口再双击「启动记单平台.bat」");
+      return j.改动;
+    }));
+}
+function dropDrafts(prefix) { Object.keys(S.drafts).forEach(k => { if (k.startsWith(prefix)) delete S.drafts[k]; }); }
+function afterSave(msg) { toast(msg); lastTxt = ""; load(); }
+
+// 保存备注 / 期限 / 价格：只发真正改了的字段
+function saveFields(cat, no) {
+  const x = ROWS.find(x => x.r.类别 === cat && x.r.单号 === no);
+  if (!x) return;
+  const base = `${cat}|${no}|#`, jobs = [];
+  for (const [k, v] of Object.entries(S.drafts)) {
+    if (!k.startsWith(base)) continue;
+    const f = k.slice(base.length), cur = x.r[f];
+    const now = f === "期限" ? v.replace(/-/g, "") : v.trim();
+    const was = cur == null ? "" : f === "期限" ? cur : String(cur);
+    const same = ["价格", "定金", "尾款"].includes(f) ? (now === "" ? cur == null : Number(now) === cur) : now === was;
+    if (!same) jobs.push({类别: cat, 单号: no, 字段: f, 文本: v});
+  }
+  if (!jobs.length) { dropDrafts(`${cat}|${no}|`); toast("没有改动"); render(); return; }
+  jobs.reduce((p, b) => p.then(() => apiSet(b)), Promise.resolve())
+    .then(() => { dropDrafts(`${cat}|${no}|#`); afterSave(`已保存 ${jobs.length} 处：${jobs.map(j => j.字段).join("、")}`); })
+    .catch(err => toast("没保存成：" + err.message));
+}
+$("#fCh").addEventListener("change", e => { S.ch = e.target.value; render(); });
+$("#fMonth").addEventListener("change", e => { S.month = e.target.value; render(); });
+$("#fWeek").addEventListener("change", e => { S.week = e.target.value; render(); });
+$("#rush").addEventListener("click", () => { S.rush = !S.rush; syncControls(); render(); });
+$("#refresh").addEventListener("click", () => load(true));
+$("#remindBtn").addEventListener("click", async () => {
+  try {
+    const res = await fetch("/api/remind", {method: "POST", headers: {"X-Jidan": "1"}});
+    if (!res.ok) throw new Error(res.status);
+    toast("提醒窗口已弹出");
+  } catch (e) { toast("没弹出来：看板还是旧版，关掉黑窗口再双击「启动记单平台.bat」"); }
+});
+$("#copy").addEventListener("click", async () => {
+  const cats = D ? D.类别 || {} : {};
+  const head = ["单号", "题目", "类别", "老板", "渠道", "日期", "总价", "未结账", "状态", "备注"];
+  const lines = [head.join("\t"), ...CUR.map(x => {
+    const r = x.r;
+    return [r.单号, r.题目 || "", (cats[r.类别] || {}).名称 || r.类别, x.boss || "自己", r.渠道 || "", r.日期 || "",
+            x.total ?? "", x.owe, STATUS[x.status], (r.备注 || "").replace(/\s+/g, " ")].join("\t");
+  })];
+  lines.push(["合计 " + CUR.length + " 单", "", "", "", "", "", CUR.reduce((s, x) => s + (x.total || 0), 0), CUR.reduce((s, x) => s + x.owe, 0), "", ""].join("\t"));
+  const txt = lines.join("\n");
+  try { await navigator.clipboard.writeText(txt); }
+  catch (e) { const a = document.createElement("textarea"); a.value = txt; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); }
+  toast(`已复制 ${CUR.length} 单，可直接粘进 Excel 或微信`);
+});
+document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+
+load();
+setInterval(load, 15000);   // AI 用 ledger.py 写入后，最多 15 秒这里就能看到
+</script>
+</body>
+</html>
