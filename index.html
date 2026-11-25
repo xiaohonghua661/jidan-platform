@@ -68,7 +68,7 @@ h1{font-size:20px;line-height:1.2;margin:0;letter-spacing:.5px}
 .search:focus,select:focus{outline:2px solid var(--accent-line);outline-offset:0;border-color:var(--accent)}
 
 /* 指标卡 */
-.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:16px 0}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:16px 0}
 .kpi{display:flex;flex-direction:column;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;text-align:left;min-width:0}
 .kpi:hover{border-color:var(--accent-line)}
 .kpi .lab{font-size:12px;color:var(--muted)}
@@ -82,7 +82,10 @@ h1{font-size:20px;line-height:1.2;margin:0;letter-spacing:.5px}
 /* 布局 */
 .layout{display:grid;grid-template-columns:288px minmax(0,1fr);gap:16px;align-items:start}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
-.side .card{position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column}
+/* 侧栏：老板 + 私单成本两张卡一起吸顶，老板名单太长就在卡里滚动 */
+.side{position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column;gap:16px}
+.side .card{display:flex;flex-direction:column;min-height:0}
+.side .costcard{flex:none}
 .card-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 14px 8px}
 .card-h h2{font-size:15px;margin:0}
 .seg{display:inline-flex;flex-wrap:wrap;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px}
@@ -131,6 +134,21 @@ tr.row{cursor:pointer;outline:none}
 tr.row:hover td,tr.row:focus-visible td{background:var(--hover)}
 tr.row.open td{background:var(--hover);border-bottom-color:transparent}
 tr.row.rush td:first-child{box-shadow:inset 3px 0 0 var(--danger)}
+.toolbar2{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px 14px 0;font-size:12px;color:var(--muted)}
+.toolbar2 .lbl{cursor:help}
+.toolbar2 .sep{width:1px;height:18px;background:var(--line);margin:0 4px}
+.hd{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 10px;font-size:12px;cursor:pointer;color:var(--text-2)}
+.hd:hover{border-color:var(--accent-line)}
+.hd .n{color:var(--faint);margin-left:5px}
+.hd[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600;text-decoration:line-through}
+.hd[aria-pressed=true] .n{color:var(--accent)}
+th.rowact,td.rowact{width:48px;text-align:center;padding-left:4px;padding-right:8px}
+.rowbtn{opacity:0;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:1px 7px;font-size:12px;cursor:pointer;color:var(--muted)}
+tr.row:hover .rowbtn,tr.row:focus-visible .rowbtn,.rowbtn.back{opacity:1}
+.rowbtn:hover{color:var(--danger);border-color:var(--danger)}
+.rowbtn.back{color:var(--accent);border-color:var(--accent-line)}
+tr.row.hiddenrow td:not(.rowact){opacity:.45}
+@media (hover:none){.rowbtn{opacity:.8}}
 td.no{font-family:"Cascadia Mono",Consolas,ui-monospace,monospace;font-size:12.5px;font-weight:600;white-space:nowrap}
 .rush-tag{display:inline-block;margin-left:6px;padding:0 5px;border-radius:4px;background:var(--danger-soft);color:var(--danger);font-family:inherit;font-size:11px;font-weight:700;line-height:17px;vertical-align:1px}
 .fresh{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:1px}
@@ -147,6 +165,8 @@ td.date{white-space:nowrap;color:var(--text-2)}
 td.num{text-align:right;white-space:nowrap}
 .money{font-weight:600}
 .money small{display:block;font-weight:400;font-size:11px;color:var(--faint);line-height:1.3}
+.noprice{display:inline-block;padding:0 6px;border-radius:5px;background:var(--danger-soft);color:var(--danger);font-size:12px;font-weight:700;line-height:20px}
+.ef input.need{border-color:var(--danger);background:var(--danger-soft)}
 .muted{color:var(--faint);font-weight:400}
 td.note{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
 
@@ -211,6 +231,89 @@ tr.detail td{background:var(--surface-2);padding:14px 18px 16px;border-bottom:1p
 .dnote{margin-top:12px;font-size:13px}
 .dmeta{margin-top:12px;font-size:11px;color:var(--faint)}
 
+/* 私单成本 */
+.mnav{display:flex;align-items:center;gap:2px;font-size:13px;font-weight:600;color:var(--text-2);white-space:nowrap}
+.mnav button{border:1px solid transparent;background:none;border-radius:6px;width:24px;height:24px;cursor:pointer;color:var(--muted);font-size:15px;line-height:1}
+.mnav button:hover:not(:disabled){border-color:var(--line);color:var(--accent)}
+.mnav button:disabled{opacity:.3;cursor:default}
+.cost-sum{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px 10px}
+.cost-total{font-size:24px;font-weight:700;line-height:1.25}
+.cost-n{font-size:12px;color:var(--muted)}
+.cost-today{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:9px 14px;border-top:1px solid var(--line-2);font-size:12px}
+.cost-today .k{display:inline;margin-right:2px}
+.ct{border-radius:999px;padding:0 8px;line-height:20px;font-weight:600;white-space:nowrap;cursor:default}
+.ct.ok{color:var(--ok);background:var(--ok-soft)}
+.ct.no{color:var(--danger);background:var(--danger-soft)}
+.ct.mid{color:var(--warn);background:var(--warn-soft)}
+.cost-roi{display:flex;flex-direction:column;gap:2px;padding:9px 14px;border-top:1px solid var(--line-2);font-size:12px}
+.roi-l{display:flex;justify-content:space-between;gap:8px;color:var(--muted)}
+.roi-l b{color:var(--text);font-weight:600}
+.roi-l small{color:var(--faint);font-size:11px}
+.roi-l b.roi-ok,.roi-ok{color:var(--ok)}
+.roi-l b.roi-no,.roi-no{color:var(--warn)}
+.kpi .hint.roi-ok{color:var(--ok);font-weight:600}.kpi .hint.roi-no{color:var(--warn);font-weight:600}
+.src{display:block;width:max-content;margin-top:2px;font-size:11px;line-height:17px;padding:0 6px;border-radius:5px;color:var(--accent);background:var(--accent-soft)}
+.cost-plats{list-style:none;margin:0;padding:10px 14px;display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--line-2)}
+.cp-top{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.cp-top span{font-weight:600}
+.cp-bar{height:4px;border-radius:999px;background:var(--line-2);margin:4px 0 2px;overflow:hidden}
+.cp-bar i{display:block;height:100%;background:var(--accent);border-radius:999px}
+.cp-sub{font-size:12px;color:var(--muted)}
+.cost-runs{display:flex;flex-direction:column;gap:5px;padding:9px 14px;border-top:1px solid var(--line-2);font-size:12px}
+.cr{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cr .due{margin:0}
+.cost-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px 12px;border-top:1px solid var(--line-2)}
+.cost-empty{color:var(--faint);font-size:12px;padding:4px 0}
+/* 弹出框：记一笔、明细 */
+.dlg{border:1px solid var(--line);border-radius:14px;padding:0;background:var(--surface);color:var(--text);box-shadow:0 20px 50px rgba(16,24,40,.25);width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px)}
+.dlg::backdrop{background:rgba(16,24,40,.45)}
+#costDlgBody{padding:16px 18px 18px}
+.dlg-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.dlg-h h3{margin:0;font-size:16px}
+.dlg-x{border:0;background:none;color:var(--faint);font-size:16px;cursor:pointer;padding:2px 7px;border-radius:6px}
+.dlg-x:hover{color:var(--text);background:var(--hover)}
+.dlg-sub{margin:18px 0 8px;font-size:14px}
+.cf-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 14px}
+.cf-grid .ef.wide{grid-column:1/-1}
+.cf-grid .ef input,.cf-grid .ef select{width:100%;height:34px}
+.cf-tip{font-size:12px;color:var(--muted);margin:12px 0 0;line-height:1.65}
+.cf-act{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.ctbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.ctbl thead th{position:static;cursor:default}
+.ctbl thead th:hover{color:var(--muted)}
+.ctbl td{padding:8px 10px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+.ctbl tbody tr:last-child td{border-bottom:0}
+.ctbl tfoot td{border-top:1px solid var(--line);border-bottom:0;background:var(--surface-2);font-size:12px;color:var(--muted)}
+.ctbl .rowbtn{opacity:1}
+.ctbl tr[data-cmonth]{cursor:pointer}
+.ctbl tr[data-cmonth]:hover td{background:var(--hover)}
+.ctbl tr.on td{background:var(--accent-soft)}
+.ctbl .cnote{max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.cvq{font-size:12px;color:var(--danger);margin-right:6px}
+/* 导出结款 */
+.foot-btns{display:inline-flex;gap:8px}
+#settleBody{padding:16px 18px 18px}
+.st-bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
+.st-chk{display:inline-flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
+#settleDlg{overflow-x:hidden}
+.st-list{display:flex;flex-direction:column;gap:10px;max-height:42vh;overflow-y:auto;overflow-x:hidden}
+.st-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.st-loose{border-style:dashed}
+.st-h{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.st-h>span{flex:1}
+.st-h small,.st-row small{color:var(--muted);font-size:12px;margin-left:6px;font-weight:400}
+.st-sum{font-size:15px}
+.st-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px dashed var(--line-2);font-size:13px}
+.st-row>span:first-child{flex:1}
+.st-n{color:var(--text-2);white-space:nowrap}
+.st-card .btn.mini[aria-pressed=true]{box-shadow:0 0 0 2px var(--accent-line)}
+.st-cbar{margin:6px 0 8px}
+.st-warn{color:var(--danger);font-weight:600}
+.st-prev{margin-top:12px}
+.st-prev-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.st-prev textarea{width:100%;min-height:160px;font:12.5px/1.65 "Cascadia Mono",Consolas,ui-monospace,monospace;color:var(--text);background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;resize:vertical}
+.st-prev textarea:focus{outline:2px solid var(--accent-line);border-color:var(--accent)}
+
 .empty{padding:48px 16px;text-align:center;color:var(--muted)}
 .empty[hidden]{display:none}
 .tfoot{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:10px 14px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
@@ -220,7 +323,8 @@ tr.detail td{background:var(--surface-2);padding:14px 18px 16px;border-bottom:1p
 
 @media (max-width:1400px){
   .layout{grid-template-columns:minmax(0,1fr)}
-  .side .card{position:static;max-height:none}
+  .side{position:static;max-height:none}
+  .cost-plats{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 24px}
   .bosses{flex-direction:row;flex-wrap:wrap;gap:8px;padding:2px 12px 14px}
   .boss{width:200px;border-color:var(--line)}
 }
@@ -236,6 +340,7 @@ tr.detail td{background:var(--surface-2);padding:14px 18px 16px;border-bottom:1p
   .search{width:100%}
   .boss{width:calc(50% - 4px)}
   .toolbar select{flex:1 1 30%}
+  .cf-grid{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -263,6 +368,10 @@ tr.detail td{background:var(--surface-2);padding:14px 18px 16px;border-bottom:1p
         <div class="card-h"><h2>老板</h2><div class="seg" id="bossSort" aria-label="老板排序"></div></div>
         <ul class="bosses" id="bosses"></ul>
       </div>
+      <div class="card costcard">
+        <div class="card-h"><h2 title="各平台店铺的推广费，钱哪天花的就算哪个月">私单成本</h2><div class="mnav"><button data-cm="-1" title="上个月" aria-label="上个月">‹</button><span id="costMonth"></span><button data-cm="1" title="下个月" aria-label="下个月">›</button></div></div>
+        <div id="costBody"></div>
+      </div>
     </aside>
     <main class="card">
       <div class="toolbar">
@@ -272,6 +381,7 @@ tr.detail td{background:var(--surface-2);padding:14px 18px 16px;border-bottom:1p
         <select id="fWeek" aria-label="结款周"></select>
         <button class="toggle" id="rush" aria-pressed="false">只看急单</button>
       </div>
+      <div class="toolbar2" id="stageBar"></div>
       <div class="chips" id="chips" hidden></div>
       <div class="tbl-wrap">
         <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
@@ -280,12 +390,14 @@ tr.detail td{background:var(--surface-2);padding:14px 18px 16px;border-bottom:1p
       <div class="tfoot">
         <span id="count"></span>
         <span class="legend">进度：<span class="st done">完成</span><span class="st txt">有记录</span><span class="st pend">待定</span><span class="st due">待结</span><span class="st">未做</span><span class="st skip">不做</span>　点行看详情，点老板名只看他的单</span>
-        <button class="btn" id="copy" title="按当前筛选和排序复制，可直接粘进 Excel 或微信">复制当前列表</button>
+        <span class="foot-btns"><button class="btn ok" data-settle-open title="按工程师出对账单、按结款工程师出结款单，可直接粘进微信">导出结款</button><button class="btn" id="copy" title="按当前筛选和排序复制，可直接粘进 Excel 或微信">复制当前列表</button></span>
       </div>
     </main>
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<dialog class="dlg" id="costDlg"><div id="costDlgBody"></div></dialog>
+<dialog class="dlg" id="settleDlg"><div id="settleBody"></div></dialog>
 
 <script>
 "use strict";
@@ -299,13 +411,21 @@ const triKey = v => { const s = stState(v); return s === "done" || s === "txt" ?
 const showV = v => v === true ? "完成" : v === false ? "不做" : (v == null || v === "") ? "未做" : String(v);
 const S = {cat: "", boss: null, ch: "", month: "", week: "", status: "", rush: false, q: "",
            sort: {k: "状态", d: 1}, bossSort: "未结", open: new Set(),
-           pending: null, stext: null, drafts: {}};   // 待确认的勾、正在写字的环节、没保存的输入
+           pending: null, stext: null, drafts: {},                       // 待确认的勾、正在写字的环节、没保存的输入
+           hideDone: new Set(), hidden: new Set(), showHidden: false,    // 隐藏已做的环节、手动隐藏的单
+           costMonth: "", costDlg: null, costVoid: null,                 // 私单成本：看哪个月、弹出框是哪种、正要作废哪笔
+           st: {all: false, week: "", pick: null, confirm: null}};       // 导出结款：连没干完的也列、结款周、正在看哪份、正要一键结款哪份
+let COSTS = [], CCFG = {店铺: {}, 方式: {}}, COST_HAND = {}, WB = {};   // WB=店铺成交：配了工作台的店从只读快照读的成交额
+let SETTLE = {};   // 结款名单：{结款工程师: [归他结款的对账工程师…]}，来自 配置/结款.json
 // 排序习惯记在本浏览器（存不了也不影响使用）
 try {
   const v = JSON.parse(localStorage.getItem("jd.sort") || "null");
   if (v && v.sort) S.sort = v.sort;
   if (v && v.bossSort) S.bossSort = v.bossSort;
 } catch (e) {}
+// 手动隐藏的单记在本浏览器（存不了也不影响使用）
+try { S.hidden = new Set(JSON.parse(localStorage.getItem("jd.hidden") || "[]")); } catch (e) {}
+function saveHidden() { try { localStorage.setItem("jd.hidden", JSON.stringify([...S.hidden])); } catch (e) {} }
 function saveSort() { try { localStorage.setItem("jd.sort", JSON.stringify({sort: S.sort, bossSort: S.bossSort})); } catch (e) {} }
 
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
@@ -358,8 +478,16 @@ function stText(v) {
 const catKeys = () => (D.类别顺序 || Object.keys(D.类别 || {})).filter(k => (D.类别 || {})[k]);
 function prep() {
   const cats = D.类别 || {}, keys = catKeys(), now = Date.now();
-  HAND = {};   // 看板手动改过、还没跟用户确认的环节
-  (D.手动改动 || []).forEach(e => { HAND[`${e.类别}|${e.单号}|${e.字段 ? "#" + e.字段 : e.环节}`] = e; });
+  HAND = {}; COST_HAND = {};   // 看板手动改过、还没跟用户确认的环节 / 私单成本
+  (D.手动改动 || []).forEach(e => {
+    if (e.对象 === "成本") COST_HAND[e.成本编号] = e;
+    else if (e.对象 === "结款") (e.明细 || []).forEach(d => { HAND[`${d.类别}|${d.单号}|结款`] = {时间: e.时间, 旧值: d.旧值, 新值: true}; });   // 一键结款：每单的结款格都标「手动」
+    else HAND[`${e.类别}|${e.单号}|${e.字段 ? "#" + e.字段 : e.环节}`] = e;
+  });
+  COSTS = (D.成本 || []).filter(c => parseD(c.日期) && typeof c.金额 === "number");
+  CCFG = D.成本配置 || {店铺: {}, 方式: {}};
+  WB = D.店铺成交 || {};
+  SETTLE = D.结款配置 || {};
   ROWS = (D.订单 || []).map(r => {
     const env = r.环节 || {};
     const stages = (cats[r.类别] && cats[r.类别].环节) || Object.keys(env);
@@ -370,7 +498,7 @@ function prep() {
       if (st === "done" || st === "txt") { done++; any = true; }
       if (s !== "结款") { hasWork = true; if (st === "todo" || st === "pend") work = false; }
     }
-    const paid = env.结款 === true;
+    const paid = env.结款 === true || env.结款 === false;   // 结款标 X = 这单不单独收钱，按已结清算
     const status = paid ? 3 : (hasWork && work ? 2 : (any ? 1 : 0));
     const total = r.价格 != null ? r.价格 : (r.定金 != null || r.尾款 != null ? (r.定金 || 0) + (r.尾款 || 0) : null);
     const got = paid ? (total || 0) : (r.价格 != null ? 0 : (r.定金 || 0));   // 定金按接单时已收算
@@ -384,7 +512,7 @@ function prep() {
             week: w ? w.label : "", weekKey: w ? w.key : 0,
             fresh: r.写入者 !== "import" && upd && now - upd < 864e5,
             catIdx: Math.max(keys.indexOf(r.类别), 0),
-            hay: [r.单号, r.题目, boss || "自己", r.工程师, r.备注, r.渠道].join(" ").toLowerCase()};
+            hay: [r.单号, r.题目, boss || "自己", r.工程师, r.备注, r.渠道, r.来源].join(" ").toLowerCase()};
   });
 }
 
@@ -401,7 +529,16 @@ function match(x, skip) {
   }
   if (S.rush && !r.急单) return false;
   if (S.q && !x.hay.includes(S.q)) return false;
+  if (!S.showHidden && S.hidden.has(r.id)) return false;
+  if (skip !== "stage") for (const s of S.hideDone) if (stageDone(x, s)) return false;
   return true;
+}
+
+// 某个环节算不算「已经走过」：做完、有记录（日期 / 快递号…）、标了不做，或者这一类根本没有这个环节
+function stageDone(x, s) {
+  if (!x.stages.includes(s)) return true;
+  const st = stState((x.r.环节 || {})[s]);
+  return st === "done" || st === "txt" || st === "skip";
 }
 
 // ---------- 排序 ----------
@@ -437,14 +574,15 @@ function sortRows(list) {
 // ---------- 渲染 ----------
 function render() {
   if (!D) return;
-  renderTabs(); renderStatus(); renderBosses(); renderChips();
+  renderTabs(); renderStatus(); renderBosses(); renderStageBar(); renderChips(); renderCost();
+  if (S.costDlg === "list") renderCostList();
   CUR = sortRows(ROWS.filter(x => match(x)));
   renderKpis(CUR);
   const cols = COLS.filter(c => !(c.hideWhenCat && S.cat));
   $("#thead").innerHTML = "<tr>" + cols.map(c => {
     const on = S.sort.k === c.k;
     return `<th class="${c.cls || ""}" data-k="${c.k}" aria-sort="${on ? (S.sort.d > 0 ? "ascending" : "descending") : "none"}">${c.k}<span class="ar">${on ? (S.sort.d > 0 ? "▲" : "▼") : ""}</span></th>`;
-  }).join("") + "</tr>";
+  }).join("") + '<th class="rowact" title="点行尾的「隐藏」可以单独过滤掉某一单"></th></tr>';
   $("#tbody").innerHTML = CUR.map(x => rowHtml(x, cols)).join("");
   $("#empty").hidden = CUR.length > 0;
   $("#count").textContent = `显示 ${CUR.length} / ${ROWS.length} 单`;
@@ -497,6 +635,24 @@ function renderBosses() {
     `<button data-bs="${k}" aria-pressed="${S.bossSort === k}" title="按${k}排">${k}</button>`).join("");
 }
 
+// 隐藏已做的环节：选中某个环节，就把这一步已经走过的单藏起来，只留还没走到这一步的
+function renderStageBar() {
+  const cats = D.类别 || {}, stages = [];
+  (S.cat ? [S.cat] : catKeys()).forEach(k => ((cats[k] || {}).环节 || []).forEach(s => { if (!stages.includes(s)) stages.push(s); }));
+  [...S.hideDone].forEach(s => { if (!stages.includes(s)) S.hideDone.delete(s); });   // 换了类别，没有的环节不再生效
+  const base = ROWS.filter(x => match(x, "stage"));
+  $("#stageBar").innerHTML = '<span class="lbl" title="选中一个环节，就把这一步已经做完、有记录或标了不做的单藏起来，只留还没走到这一步的；选几个就每个都过滤">隐藏已做：</span>'
+    + stages.map(s => `<button class="hd" data-hd="${esc(s)}" aria-pressed="${S.hideDone.has(s)}" title="藏起「${esc(s)}」已经做完 / 有记录 / 不做的单（现在有这么多单）">${esc(s)}<span class="n">${base.filter(x => stageDone(x, s)).length}</span></button>`).join("")
+    + (S.hidden.size ? `<span class="sep"></span><button class="hd" data-showhidden aria-pressed="${S.showHidden}" title="点一下临时把手动隐藏的单显示出来">手动隐藏 ${S.hidden.size} 单${S.showHidden ? "（正在显示）" : ""}</button><button class="link" data-unhideall>全部恢复</button>` : "");
+}
+
+function actCell(x) {
+  const id = esc(x.r.id);
+  return S.hidden.has(x.r.id)
+    ? `<td class="rowact"><button class="rowbtn back" data-unhide="${id}" title="恢复显示这一单">恢复</button></td>`
+    : `<td class="rowact"><button class="rowbtn" data-hide="${id}" title="把这一单从列表里藏起来（「手动隐藏」里能恢复）">隐藏</button></td>`;
+}
+
 function renderChips() {
   const cats = D.类别 || {}, chips = [];
   if (S.cat) chips.push(["cat", "类别：" + ((cats[S.cat] || {}).名称 || S.cat)]);
@@ -507,6 +663,7 @@ function renderChips() {
   if (S.status) chips.push(["status", "状态：" + (S.status === "unpaid" ? "未结清" : STATUS[+S.status])]);
   if (S.rush) chips.push(["rush", "只看急单"]);
   if (S.q) chips.push(["q", "搜索：" + $("#q").value.trim()]);
+  if (S.hideDone.size) chips.push(["stage", "隐藏已做：" + [...S.hideDone].join("、")]);
   $("#chips").innerHTML = chips.map(([k, t]) => `<span class="chip">${esc(t)}<button data-clear="${k}" aria-label="去掉这个筛选">×</button></span>`).join("")
     + (chips.length > 1 ? '<button class="link" data-clear="all">清除全部</button>' : "");
   $("#chips").hidden = !chips.length;
@@ -516,7 +673,7 @@ function renderKpis(list) {
   const sum = (a, f) => a.reduce((s, x) => s + (f(x) || 0), 0);
   const total = sum(list, x => x.total), got = sum(list, x => x.got), owe = sum(list, x => x.owe);
   const cnt = k => list.filter(x => x.status === k).length;
-  const due = list.filter(x => x.status === 2);
+  const due = list.filter(x => x.status === 2 && x.boss !== "自己");   // 自己接的私单不用催（用户 2026-11-25）；老板空着的照旧要催
   const rushOpen = list.filter(x => x.r.急单 && x.status < 2).length;
   const pct = total ? Math.round(got / total * 100) : 0;
   $("#kpis").innerHTML = `
@@ -524,7 +681,19 @@ function renderKpis(list) {
     <button class="kpi" data-kpi="all" title="看全部状态"><span class="lab">总价</span><span class="val">${yuan(total)}</span><span class="hint">平均每单 ${list.length ? yuan(Math.round(total / list.length)) : "—"}</span></button>
     <button class="kpi ok" data-kpi="paid" title="只看已结款"><span class="lab">已结账</span><span class="val">${yuan(got)}</span><span class="kbar"><i style="width:${pct}%"></i></span><span class="hint">占总价 ${pct}%（定金按已收算）</span></button>
     <button class="kpi warn" data-kpi="unpaid" title="只看未结清"><span class="lab">未结账</span><span class="val">${yuan(owe)}</span><span class="hint">其中待结款 ${due.length} 单 ${yuan(sum(due, x => x.owe))}，可以催了</span></button>
-    <button class="kpi${rushOpen ? " danger" : ""}" data-kpi="rush" title="只看急单"><span class="lab">急单 · 没做完</span><span class="val">${rushOpen}<small>单</small></span><span class="hint">${S.rush ? "再点一下取消" : "点一下只看急单"}</span></button>`;
+    <button class="kpi${rushOpen ? " danger" : ""}" data-kpi="rush" title="只看急单"><span class="lab">急单 · 没做完</span><span class="val">${rushOpen}<small>单</small></span><span class="hint">${S.rush ? "再点一下取消" : "点一下只看急单"}</span></button>`
+    + costKpi();
+}
+// 私单成本卡：本月推广费，今天还有哪个店没推广（不跟着上面的筛选变）
+function costKpi() {
+  if (!("成本" in D)) return '<button class="kpi" data-costlist><span class="lab">私单成本</span><span class="val">—</span><span class="hint">重启看板后显示</span></button>';
+  const m = curMonth(), list = COSTS.filter(c => c.日期.slice(0, 6) === m), t = roiSum(roiOf(m));
+  const st = shopStates().filter(s => s.daily), todo = st.filter(s => !s.on.length && !s.open), check = st.filter(s => s.open);
+  const promo = todo.length ? `<span class="hint" style="color:var(--danger);font-weight:600">今天还没推广：${esc(todo.map(s => s.name).join("、"))}</span>`
+    : check.length ? `<span class="hint" style="color:var(--warn)">看看推广费花完没：${esc(check.map(s => s.name).join("、"))}</span>`
+    : `<span class="hint">${list.length} 笔 · 今天都推广了</span>`;
+  return `<button class="kpi" data-costlist title="看明细、按月回本、记一笔"><span class="lab">私单成本 · ${+m.slice(4)}月</span><span class="val">${yuan(list.reduce((s, c) => s + c.金额, 0))}</span>`
+    + `<span class="hint ${t.收 >= t.花 ? "roi-ok" : "roi-no"}">${roiWord(t)}</span>${promo}</button>`;
 }
 
 function steps(x) {
@@ -574,9 +743,19 @@ function fieldEditor(x) {
   return `<div class="editbox">
     <label class="ef wide"><span class="k">备注${handTag(k("备注"), 1)}</span><textarea data-draft="${esc(k("备注"))}" rows="2" maxlength="200" placeholder="写点什么，比如：板子周五到；客户要先看视频">${esc(draft(k("备注"), r.备注 || ""))}</textarea></label>
     <label class="ef"><span class="k">期限${handTag(k("期限"), 1)}</span><input type="date" data-draft="${esc(k("期限"))}" value="${esc(draft(k("期限"), due))}"></label>
-    ${money.map(f => `<label class="ef"><span class="k">${f}${handTag(k(f), 1)}</span><input type="number" min="0" step="1" data-draft="${esc(k(f))}" value="${esc(draft(k(f), r[f] ?? ""))}" placeholder="元"></label>`).join("")}
+    ${money.map(f => `<label class="ef"><span class="k">${f}${handTag(k(f), 1)}</span><input type="number" min="0" step="1" data-draft="${esc(k(f))}" value="${esc(draft(k(f), r[f] ?? ""))}" placeholder="${x.total == null ? "必填" : "元"}"${x.total == null ? ' class="need"' : ""}></label>`).join("")}
+    ${srcEditor(r, k("来源"))}
     <div class="ef act"><button class="btn ok" data-fsave data-tcat="${esc(r.类别)}" data-tno="${esc(r.单号)}">保存修改</button></div>
   </div>`;
+}
+
+// 来源：私单是从哪个推广店铺来的，选了就算进那个平台的回本
+function srcEditor(r, key) {
+  const shops = Object.keys(CCFG.店铺 || {}), cur = draft(key, r.来源 || "");
+  if (!shops.length && !r.来源) return "";
+  const opts = [...new Set([...shops, ...(r.来源 ? [r.来源] : [])])];
+  return `<label class="ef"><span class="k" title="私单是从哪个店铺来的，选了就算进那个平台的回本">来源${handTag(key, 1)}</span><select data-draft="${esc(key)}">`
+    + `<option value="">不是推广来的</option>${opts.map(s => `<option value="${esc(s)}"${s === cur ? " selected" : ""}>${esc(s)}</option>`).join("")}</select></label>`;
 }
 
 function confirmBar(x) {
@@ -595,15 +774,15 @@ function rowHtml(x, cols) {
     题目: `<td class="ttl"><div title="${esc(r.题目)}">${esc(r.题目 || "")}</div></td>`,
     类别: `<td><span class="cat c${x.catIdx % 6}">${esc((cats[r.类别] || {}).名称 || r.类别)}</span></td>`,
     老板: `<td><button class="bosslink${x.boss ? "" : " self"}" data-boss="${esc(x.boss)}" title="只看这个老板的单">${x.boss ? esc(x.boss) : "自己"}</button></td>`,
-    渠道: `<td><span class="chn">${esc(r.渠道 || "")}</span></td>`,
+    渠道: `<td><span class="chn">${esc(r.渠道 || "")}</span>${r.来源 ? `<span class="src" title="私单从这个店铺来的，算回本用">${esc(r.来源)}</span>` : ""}</td>`,
     日期: `<td class="date" title="${r.日期 ? "结款周 " + x.week : "没填日期"}">${r.日期 ? showDate(r.日期) : '<span class="muted">—</span>'}</td>`,
-    金额: `<td class="num money">${x.total == null ? '<span class="muted">—</span>' : yuan(x.total)}${r.价格 == null && (r.定金 != null || r.尾款 != null) ? `<small>定 ${num(r.定金)} + 尾 ${num(r.尾款)}</small>` : ""}</td>`,
+    金额: `<td class="num money">${x.total == null ? '<span class="noprice" title="价格必填：问清楚多少钱，在详情里填上">缺价格</span>' : yuan(x.total)}${r.价格 == null && (r.定金 != null || r.尾款 != null) ? `<small>定 ${num(r.定金)} + 尾 ${num(r.尾款)}</small>` : ""}</td>`,
     进度: `<td>${steps(x)}</td>`,
-    状态: `<td><span class="badge s${x.status}">${STATUS[x.status]}</span>${dueTag(x)}</td>`,
+    状态: `<td><span class="badge s${x.status}">${(r.环节 || {}).结款 === false ? "不用结" : STATUS[x.status]}</span>${dueTag(x)}</td>`,
     备注: `<td class="note" title="${esc(r.备注)}">${esc(r.备注 || "")}</td>`,
   };
-  return `<tr class="row${r.急单 ? " rush" : ""}${open ? " open" : ""}" data-id="${esc(r.id)}" tabindex="0">${cols.map(c => cell[c.k]).join("")}</tr>`
-       + (open ? detailHtml(x, cols.length) : "");
+  return `<tr class="row${r.急单 ? " rush" : ""}${open ? " open" : ""}${S.hidden.has(r.id) ? " hiddenrow" : ""}" data-id="${esc(r.id)}" tabindex="0">${cols.map(c => cell[c.k]).join("")}${actCell(x)}</tr>`
+       + (open ? detailHtml(x, cols.length + 1) : "");
 }
 
 function detailHtml(x, span) {
@@ -617,6 +796,7 @@ function detailHtml(x, span) {
       ${kv("单号", esc(r.单号))}
       ${kv("类别 · 渠道", `${esc((cats[r.类别] || {}).名称 || r.类别)} · ${esc(r.渠道 || "")}${ch.计价 ? "（" + esc(ch.计价) + "）" : ""}`)}
       ${kv("老板", x.boss ? esc(x.boss) : "自己")}
+      ${kv("来源", r.来源 ? esc(r.来源) + "（算进回本）" : "—")}
       ${kv("工程师", esc(r.工程师 || "—"))}
       ${kv("日期", r.日期 ? `${esc(stText(r.日期))}　结款周 ${x.week}` : "—")}
       ${kv("期限", r.期限 ? esc(stText(r.期限)) + (x.status < 2 ? dueTag(x) : "") : "—")}
@@ -629,6 +809,203 @@ function detailHtml(x, span) {
     ${fieldEditor(x)}
     <div class="dmeta">更新 ${esc((r.更新 || "").replace("T", " "))} · 写入者 ${esc(r.写入者 || "—")} · ${esc(r.id || "")}</div>
   </td></tr>`;
+}
+
+// ---------- 私单成本：各平台店铺的推广费，钱哪天花的就算哪个月 ----------
+const ymd = d => d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+const md = d => `${d.getMonth() + 1}-${pad(d.getDate())}`;
+const curMonth = () => ymd(TODAY).slice(0, 6);
+const monthName = m => (+m.slice(0, 4) === TODAY.getFullYear() ? "" : m.slice(0, 4) + "年") + (+m.slice(4)) + "月";
+const costShort = c => (c.方式 ? c.方式 + " " : "") + yuan(c.金额);
+const costPlat = c => c.平台 || c.店铺;
+const byDay = (a, b) => (a.日期 + a.id).localeCompare(b.日期 + b.id);
+const daysOf = c => (c.天数 == null ? 1 : +c.天数);   // 0 = 用完为止（充进去的推广费，花完就停）
+const daysText = c => daysOf(c) === 0 ? "用完为止" : daysOf(c) + " 天";
+function costSpan(c) {   // 这笔管的日子：从日期起算 N 天；用完为止和 1 天都只算当天
+  const b = parseD(c.日期), e = new Date(b);
+  e.setDate(b.getDate() + Math.max(daysOf(c), 1) - 1);
+  return [b, e];
+}
+function costMonths() { return [...new Set([...COSTS.map(c => c.日期.slice(0, 6)), curMonth(), S.month].filter(Boolean))].sort(); }
+// 每个店铺今天的推广情况：「每天推广」的看今天记没记；投好几天的看投到哪天；用完为止的提醒看看花完没有
+function shopStates() {
+  return Object.entries(CCFG.店铺 || {}).map(([name, sc]) => {
+    const mine = COSTS.filter(c => c.店铺 === name);
+    const on = mine.filter(c => { const [b, e] = costSpan(c); return b <= TODAY && TODAY <= e; });
+    const ends = mine.filter(c => daysOf(c) > 1).map(c => +costSpan(c)[1]);
+    const last = mine.sort(byDay).pop() || null;
+    return {name, daily: !!sc.每天推广, on, last, end: ends.length ? new Date(Math.max(...ends)) : null,
+            open: !!(last && daysOf(last) === 0 && !on.length), run: !!(last && daysOf(last) > 1)};
+  });
+}
+// 回本：推广来的私单（订单标了来源）按账本月算收入，推广费按花钱那天算；返回 {平台: {花, 收, 单, 欠}}
+const shopPlat = s => ((CCFG.店铺 || {})[s] || {}).平台 || s;
+function roiOf(m) {
+  const out = new Map(), get = p => out.get(p) || (out.set(p, {花: 0, 收: 0, 单: 0, 欠: 0}), out.get(p));
+  COSTS.forEach(c => { if (m == null || c.日期.slice(0, 6) === m) get(costPlat(c)).花 += c.金额; });
+  // 配了工作台的店：成交额用快照（起算后累计，不分月），不再数订单库来源单，免重复
+  const wbShops = new Set(Object.keys(WB));
+  for (const s of wbShops) { const r = WB[s]; get(shopPlat(s)).收 += r.收 || 0; get(shopPlat(s)).单 += r.单 || 0; }
+  ROWS.forEach(x => {
+    if (!x.r.来源 || wbShops.has(x.r.来源) || (m != null && x.r.月 !== m)) return;
+    const p = get(shopPlat(x.r.来源));
+    p.收 += x.total || 0; p.单++; p.欠 += x.owe;
+  });
+  return out;
+}
+const roiSum = rs => [...rs.values()].reduce((a, p) => ({花: a.花 + p.花, 收: a.收 + p.收, 单: a.单 + p.单, 欠: a.欠 + p.欠}), {花: 0, 收: 0, 单: 0, 欠: 0});
+const roiWord = t => t.收 - t.花 >= 0 ? `已回本，净赚 ${yuan(t.收 - t.花)}` : `还差 ${yuan(t.花 - t.收)} 回本`;
+function runHtml(s) {
+  if (s.open) return `<div class="cr"><b>${esc(s.name)}</b><span class="due cool" title="用完为止：看看推广费花完没有，花完了再开">${md(parseD(s.last.日期))} ${esc(costShort(s.last))} · 用完为止</span></div>`;
+  const d = Math.round((s.end - TODAY) / 864e5);
+  const [t, c] = d < 0 ? [`${md(s.end)} 到期了，续不续？`, "hot"] : d === 0 ? ["今天到期，续不续？", "hot"]
+    : d === 1 ? ["明天到期", "warm"] : [`投放中 · 到 ${md(s.end)}（还剩 ${d} 天）`, "cool"];
+  return `<div class="cr"><b>${esc(s.name)}</b><span class="due ${c}">${t}</span></div>`;
+}
+function renderCost() {
+  const el = $("#costBody");
+  if (!("成本" in D)) {
+    $("#costMonth").textContent = "";
+    el.innerHTML = '<div class="cost-sum"><span class="cost-empty">看板服务是旧版：关掉黑窗口，再双击「启动记单平台.bat」就能看到私单成本</span></div>';
+    return;
+  }
+  const ms = costMonths();
+  if (!ms.includes(S.costMonth)) S.costMonth = curMonth();
+  const m = S.costMonth, isCur = m === curMonth(), i = ms.indexOf(m);
+  $("#costMonth").textContent = monthName(m);
+  document.querySelector('[data-cm="-1"]').disabled = i <= 0;
+  document.querySelector('[data-cm="1"]').disabled = i >= ms.length - 1;
+  const list = COSTS.filter(c => c.日期.slice(0, 6) === m), total = list.reduce((s, c) => s + c.金额, 0);
+  const rs = roiOf(m), t = roiSum(rs);
+  const plats = new Map();   // 按平台汇总，平台下再分店铺；只有订单没有花费的平台也列出来
+  for (const c of list) {
+    const p = plats.get(costPlat(c)) || {name: costPlat(c), sum: 0, shops: new Map()};
+    p.sum += c.金额; p.shops.set(c.店铺, (p.shops.get(c.店铺) || 0) + c.金额);
+    plats.set(p.name, p);
+  }
+  rs.forEach((v, k) => { if (!plats.has(k)) plats.set(k, {name: k, sum: 0, shops: new Map()}); });
+  const max = Math.max(1, ...[...plats.values()].map(p => p.sum));
+  const states = shopStates(), daily = states.filter(s => s.daily);
+  const yest = new Date(TODAY); yest.setDate(TODAY.getDate() - 1);
+  const runs = states.filter(s => !s.daily && (s.open || (s.run && s.end >= yest)));
+  const nHand = Object.keys(COST_HAND).length, net = t.收 - t.花;
+  const tag = s => s.on.length
+    ? `<span class="ct ok" title="${esc("今天：" + s.on.map(costShort).join("，"))}">${esc(s.name)} ✓</span>`
+    : s.open ? `<span class="ct mid" title="${esc(`上次 ${md(parseD(s.last.日期))} ${costShort(s.last)}，用完为止：看看花完没有，花完了再开`)}">${esc(s.name)} 看看花完没</span>`
+    : `<span class="ct no" title="${esc(s.last ? `上次 ${md(parseD(s.last.日期))} ${costShort(s.last)}` : "还没记过")}">${esc(s.name)} 还没推广</span>`;
+  el.innerHTML = `
+    <div class="cost-sum"><div><div class="cost-total">${yuan(total)}</div><div class="cost-n">${isCur ? "本月 · " : ""}${list.length} 笔</div></div>
+      <button class="btn ok" data-costadd title="推广完记一笔：店铺、方式、金额">＋ 记一笔</button></div>
+    <div class="cost-roi" title="推广来的私单：配了工作台的店用快照成交额，其余用订单详情里「来源」选了店铺的单">
+      <div class="roi-l"><span>推广来的单</span><b>${t.单} 单 ${yuan(t.收)}</b></div>
+      <div class="roi-l"><span>回本</span><b class="${net >= 0 ? "roi-ok" : "roi-no"}">${roiWord(t)}</b></div>
+      ${t.欠 ? `<div class="roi-l"><span></span><small>其中还有 ${yuan(t.欠)} 没收到</small></div>` : ""}
+    </div>
+    ${Object.entries(WB).map(([s, r]) => `<div class="cost-roi" title="${esc((r.范围 || "") + (r.账号 ? "　账号 " + r.账号 : ""))}">
+      <div class="roi-l"><span>${esc(s)} 店铺快照</span><small>采于 ${esc(r.快照日 || "?")}${r.起算日 ? "，" + r.起算日.slice(0,4) + "-" + r.起算日.slice(4,6) + "-" + r.起算日.slice(6) + " 起算" : ""}</small></div>
+      <div class="roi-l"><span>起算后成交（算回本）</span><b>${r.单} 单 ${yuan(r.收)}</b></div>
+      <div class="roi-l"><span>快照内总成交</span><small>${r.总单} 单 ${yuan(r.总收)}（含旧单，仅参考）</small></div>
+    </div>`).join("")}
+    ${isCur && daily.length ? `<div class="cost-today"><span class="k">今天推广</span>${daily.map(tag).join("")}</div>` : ""}
+    <ul class="cost-plats">${[...plats.values()].sort((a, b) => b.sum - a.sum).map(p => {
+      const r = rs.get(p.name) || {收: 0, 单: 0};
+      const shops = p.shops.size > 1 || (p.shops.size && !p.shops.has(p.name)) ? [...p.shops].map(([s, v]) => `${esc(s)} ${yuan(v)}`).join(" · ") + " · " : "";
+      return `<li>
+      <div class="cp-top"><b>${esc(p.name)}</b><span>${yuan(p.sum)}</span></div>
+      <div class="cp-bar"><i style="width:${Math.max(Math.round(p.sum / max * 100), 2)}%"></i></div>
+      <div class="cp-sub">${shops}来了 ${r.单} 单 ${yuan(r.收)}${r.收 >= p.sum ? (p.sum ? ' <span class="roi-ok">回本</span>' : "") : ` <span class="roi-no">差 ${yuan(p.sum - r.收)}</span>`}</div></li>`;
+    }).join("") || `<li class="cost-empty">${monthName(m)}还没记推广费</li>`}</ul>
+    ${isCur && runs.length ? `<div class="cost-runs">${runs.map(runHtml).join("")}</div>` : ""}
+    <div class="cost-foot"><button class="link" data-costlist>明细 · 按月汇总</button>${nHand ? `<span class="handtag" title="看板上手动记的、作废的，等 AI 跟你确认">手动 ${nHand} 笔</span>` : ""}</div>`;
+}
+
+const costDlg = () => $("#costDlg");
+function showDlg() { if (!costDlg().open) costDlg().showModal(); }
+function closeCostDlg() { if (costDlg().open) costDlg().close(); }
+function openCostAdd() {
+  const names = Object.keys(CCFG.店铺 || {});
+  if (!("成本" in D)) { toast("看板服务是旧版：关掉黑窗口，再双击「启动记单平台.bat」"); return; }
+  if (!names.length) { toast("还没有店铺：在 配置/成本.json 的「店铺」里加"); return; }
+  const st = shopStates(), first = (st.find(s => s.daily && !s.on.length) || st[0]).name;
+  const t = ymd(TODAY);
+  S.costDlg = "add";
+  $("#costDlgBody").innerHTML = `<form id="costForm">
+    <div class="dlg-h"><h3>记一笔私单成本</h3><button type="button" class="dlg-x" data-dlgclose aria-label="关闭">✕</button></div>
+    <div class="cf-grid">
+      <label class="ef"><span class="k">日期</span><input type="date" name="日期" value="${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6)}" required></label>
+      <label class="ef"><span class="k">店铺</span><select name="店铺">${names.map(n => {
+        const p = (CCFG.店铺[n] || {}).平台 || n;
+        return `<option value="${esc(n)}"${n === first ? " selected" : ""}>${esc(n)}${p !== n ? "（" + esc(p) + "）" : ""}</option>`;
+      }).join("")}</select></label>
+      <label class="ef"><span class="k">方式</span><input name="方式" list="costWays" maxlength="30" placeholder="擦亮、推广、投放…"></label>
+      <label class="ef"><span class="k">金额（元）</span><input type="number" name="金额" min="0.01" step="0.01" required placeholder="必填"></label>
+      <label class="ef"><span class="k">管几天</span><input name="天数" list="costDays" maxlength="5" value="用完为止" placeholder="用完为止 / 天数"></label>
+      <label class="ef"><span class="k">备注</span><input name="备注" maxlength="200" placeholder="可不填"></label>
+    </div>
+    <datalist id="costWays"></datalist>
+    <datalist id="costDays"><option value="用完为止"><option value="1"><option value="7"></datalist>
+    <p class="cf-tip">换店铺会带出这个店上次记的方式和金额，核对一下再记。充进去花完就停的写「用完为止」；一次投好几天的（比如淘宝店 7 天一共 100）写天数，到期那天提醒续不续。钱哪天花的就算哪个月。<br>记完算「看板手动」，下次 AI 跟你对话时会问是不是你记的。</p>
+    <div class="cf-act"><button type="button" class="btn" data-dlgclose>取消</button><button type="submit" class="btn ok">记上</button></div>
+  </form>`;
+  const f = $("#costForm"), el = n => f.elements[n];
+  const fill = () => {   // 换店铺：方式候选按平台给，并带出这个店上次的方式、金额、天数
+    const n = el("店铺").value, plat = (CCFG.店铺[n] || {}).平台 || n;
+    const ways = [...new Set([...((CCFG.方式 || {})[plat] || []), ...COSTS.filter(c => costPlat(c) === plat && c.方式).map(c => c.方式)])];
+    $("#costWays").innerHTML = ways.map(w => `<option value="${esc(w)}">`).join("");
+    const last = COSTS.filter(c => c.店铺 === n).sort(byDay).pop();
+    el("方式").value = last && last.方式 || ""; el("金额").value = last ? last.金额 : "";
+    el("天数").value = last && daysOf(last) > 0 ? daysOf(last) : "用完为止";
+  };
+  el("店铺").addEventListener("change", fill);
+  fill();
+  f.addEventListener("submit", e => {
+    e.preventDefault();
+    const body = {操作: "新增"};
+    COST_KEYS.forEach(k => { body[k] = el(k).value.trim(); });
+    apiCost(body).then(c => { closeCostDlg(); afterSave(`已记：${c.内容}`); }).catch(err => toast("没记上：" + err.message));
+  });
+  showDlg();
+  el("金额").focus(); el("金额").select();
+}
+const COST_KEYS = ["日期", "店铺", "方式", "金额", "天数", "备注"];
+
+function openCostList() { S.costDlg = "list"; S.costVoid = null; renderCostList(); showDlg(); }
+function renderCostList() {
+  const m = S.costMonth, list = COSTS.filter(c => c.日期.slice(0, 6) === m).sort(byDay).reverse();
+  const total = list.reduce((s, c) => s + c.金额, 0);
+  const plats = [...new Set(COSTS.map(costPlat))];
+  const months = [...new Set([...COSTS.map(c => c.日期.slice(0, 6)), ...ROWS.filter(x => x.r.来源 && x.r.月).map(x => x.r.月)])].sort().reverse();
+  const sum = (mm, p) => COSTS.filter(c => c.日期.slice(0, 6) === mm && (p == null || costPlat(c) === p)).reduce((s, c) => s + c.金额, 0);
+  const roiCells = t => `<td class="num">${t.单 ? `${t.单} 单 ${yuan(t.收)}` : '<span class="muted">—</span>'}</td>`
+    + `<td class="num"><b class="${t.收 >= t.花 ? "roi-ok" : "roi-no"}">${t.收 >= t.花 ? "+" : "−"}${yuan(Math.abs(t.收 - t.花))}</b></td>`;
+  const all = roiSum(roiOf(null));
+  const act = c => S.costVoid === c.id
+    ? `<span class="cvq">作废这笔？</span><button class="btn mini ok" data-cvoidyes="${esc(c.id)}">确定</button> <button class="btn mini" data-cvoidno>取消</button>`
+    : `<button class="rowbtn" data-cvoid="${esc(c.id)}" title="记错了就作废：留底，不再算钱">作废</button>`;
+  $("#costDlgBody").innerHTML = `
+    <div class="dlg-h"><h3>私单成本明细 · ${m.slice(0, 4)}年${+m.slice(4)}月</h3><button type="button" class="dlg-x" data-dlgclose aria-label="关闭">✕</button></div>
+    <div class="ctbl-wrap"><table class="ctbl"><thead><tr><th>日期</th><th>店铺</th><th>方式</th><th class="num">金额</th><th>管几天</th><th>备注</th><th>记的人</th><th></th></tr></thead><tbody>
+    ${list.map(c => {
+      const e = costSpan(c)[1], days = daysOf(c);
+      return `<tr><td>${md(parseD(c.日期))}</td><td>${esc(c.店铺)}</td><td>${esc(c.方式 || "")}</td><td class="num"><b>${yuan(c.金额)}</b></td>`
+        + `<td>${days > 1 ? `${days} 天 · 到 ${md(e)}` : daysText(c)}</td><td class="cnote" title="${esc(c.备注 || "")}">${esc(c.备注 || "")}</td>`
+        + `<td>${esc(c.写入者 || "")}${COST_HAND[c.id] ? ' <span class="handtag" title="看板上手动记的，等 AI 跟你确认">手动</span>' : ""}</td><td>${act(c)}</td></tr>`;
+    }).join("") || `<tr><td colspan="8" class="cost-empty">${monthName(m)}还没记推广费</td></tr>`}
+    </tbody><tfoot><tr><td colspan="3">合计 ${list.length} 笔</td><td class="num"><b>${yuan(total)}</b></td><td colspan="4"></td></tr></tfoot></table></div>
+    <h4 class="dlg-sub">按月汇总 · 回本<span class="muted" style="font-size:12px;margin-left:8px">推广来的单＝订单详情里「来源」选了店铺的单；点一行看那个月的明细</span></h4>
+    <div class="ctbl-wrap"><table class="ctbl"><thead><tr><th>月份</th>${plats.map(p => `<th class="num">${esc(p)}</th>`).join("")}<th class="num">花费合计</th><th class="num">推广来的单</th><th class="num">回本（收 − 花）</th></tr></thead><tbody>
+    ${months.map(mm => `<tr data-cmonth="${mm}"${mm === m ? ' class="on"' : ""}><td>${mm.slice(0, 4)}年${+mm.slice(4)}月</td>`
+      + plats.map(p => `<td class="num">${sum(mm, p) ? yuan(sum(mm, p)) : '<span class="muted">—</span>'}</td>`).join("")
+      + `<td class="num"><b>${yuan(sum(mm))}</b></td>${roiCells(roiSum(roiOf(mm)))}</tr>`).join("") || `<tr><td colspan="${plats.length + 4}" class="cost-empty">还没有私单成本</td></tr>`}
+    </tbody><tfoot><tr><td>全部月份</td>${plats.map(p => `<td class="num">${yuan(COSTS.filter(c => costPlat(c) === p).reduce((s, c) => s + c.金额, 0))}</td>`).join("")}<td class="num"><b>${yuan(all.花)}</b></td>${roiCells(all)}</tr></tfoot></table></div>
+    <div class="cf-act"><button class="btn" data-costadd>＋ 记一笔</button><button class="btn ok" data-dlgclose>关闭</button></div>`;
+}
+function apiCost(body) {
+  return fetch("/api/cost", {method: "POST", headers: {"X-Jidan": "1", "Content-Type": "application/json"}, body: JSON.stringify(body)})
+    .then(res => res.json().catch(() => ({})).then(j => {
+      if (!res.ok) throw new Error(j.错误 || "看板服务是旧版，关掉黑窗口再双击「启动记单平台.bat」");
+      return j.改动;
+    }));
 }
 
 // ---------- 下拉框 ----------
@@ -670,8 +1047,9 @@ async function load(manual) {
     const t = new Date();
     $("#stamp").textContent = `已同步 ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())} · 每 15 秒自动刷新`;
     const last = ROWS.filter(x => x.r.写入者 !== "import").sort((a, b) => (b.r.更新 || "").localeCompare(a.r.更新 || ""))[0];
-    const nHand = (D.手动改动 || []).length;
+    const nHand = (D.手动改动 || []).length, nNoPrice = ROWS.filter(x => x.total == null).length;
     $("#meta").textContent = `共 ${ROWS.length} 单` + (last ? ` · 最近写入 ${last.r.更新.slice(5, 16).replace("T", " ")}（${last.r.写入者}，${last.r.单号}）` : "")
+      + (nNoPrice ? ` · ⚠ ${nNoPrice} 单没填价格` : "")
       + (nHand ? ` · 看板手动改了 ${nHand} 处，等 AI 跟你确认` : "") + " · 数据在各员工目录的 订单库";
     if (manual) toast("已刷新");
   } catch (e) {
@@ -681,7 +1059,8 @@ async function load(manual) {
 
 // ---------- 交互 ----------
 function clearFilter(k) {
-  if (k === "all") { Object.assign(S, {cat: "", boss: null, ch: "", month: "", week: "", status: "", rush: false, q: ""}); $("#q").value = ""; }
+  if (k === "all") { Object.assign(S, {cat: "", boss: null, ch: "", month: "", week: "", status: "", rush: false, q: "", showHidden: false}); S.hideDone.clear(); $("#q").value = ""; }
+  else if (k === "stage") S.hideDone.clear();
   else if (k === "boss") S.boss = null;
   else if (k === "rush") S.rush = false;
   else if (k === "q") { S.q = ""; $("#q").value = ""; }
@@ -695,8 +1074,16 @@ function syncControls() {
 function pickBoss(name) { S.boss = S.boss === name ? null : name; render(); }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-sedit],[data-ssave],[data-scancel],[data-fsave],[data-tri],[data-confirm],[data-cat],[data-st],[data-bs],[data-clear],[data-kpi],.bosslink,.boss,th[data-k],tr.row");
+  const t = e.target.closest("[data-hide],[data-unhide],[data-hd],[data-showhidden],[data-unhideall],[data-sedit],[data-ssave],[data-scancel],[data-fsave],[data-tri],[data-confirm],[data-cat],[data-st],[data-bs],[data-clear],[data-kpi],.bosslink,.boss,th[data-k],tr.row");
   if (!t) return;
+  if (t.matches("[data-hide]")) {   // 手动隐藏某一单
+    S.hidden.add(t.dataset.hide); S.open.delete(t.dataset.hide); saveHidden();
+    toast("已隐藏这一单，工具栏「手动隐藏」里能恢复"); render(); return;
+  }
+  if (t.matches("[data-unhide]")) { S.hidden.delete(t.dataset.unhide); saveHidden(); render(); return; }
+  if (t.matches("[data-hd]")) { const s = t.dataset.hd; S.hideDone.has(s) ? S.hideDone.delete(s) : S.hideDone.add(s); render(); return; }
+  if (t.matches("[data-showhidden]")) { S.showHidden = !S.showHidden; render(); return; }
+  if (t.matches("[data-unhideall]")) { S.hidden.clear(); S.showHidden = false; saveHidden(); toast("手动隐藏的单都恢复了"); render(); return; }
   if (t.matches("[data-sedit]")) {   // 打开某个环节的写字框
     const d = t.dataset;
     S.stext = {cat: d.tcat, no: d.tno, stage: d.tstage};
@@ -751,6 +1138,28 @@ document.addEventListener("click", e => {
     render();
   }
 });
+// 私单成本：记一笔、明细、换月份、作废
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-costadd],[data-costlist],[data-dlgclose],[data-cm],[data-cvoid],[data-cvoidyes],[data-cvoidno],[data-cmonth]");
+  if (!t) return;
+  if (t.matches("[data-costadd]")) openCostAdd();
+  else if (t.matches("[data-costlist]")) { if (t.matches(".kpi")) S.costMonth = curMonth(); openCostList(); }
+  else if (t.matches("[data-dlgclose]")) { const d = t.closest("dialog"); if (d && d.open) d.close(); }
+  else if (t.matches("[data-cm]")) {
+    const ms = costMonths(), m = ms[ms.indexOf(S.costMonth) + +t.dataset.cm];
+    if (m) { S.costMonth = m; renderCost(); }
+  }
+  else if (t.matches("[data-cvoid]")) { S.costVoid = t.dataset.cvoid; renderCostList(); }
+  else if (t.matches("[data-cvoidno]")) { S.costVoid = null; renderCostList(); }
+  else if (t.matches("[data-cvoidyes]")) {
+    S.costVoid = null;
+    apiCost({操作: "作废", 编号: t.dataset.cvoidyes})
+      .then(c => afterSave(c ? `已作废：${c.内容}` : "这笔本来就作废了"))
+      .catch(err => { toast("没作废成：" + err.message); renderCostList(); });
+  }
+  else if (t.matches("[data-cmonth]")) { S.costMonth = t.dataset.cmonth; renderCost(); renderCostList(); }
+});
+$("#costDlg").addEventListener("close", () => { S.costDlg = null; S.costVoid = null; });
 document.addEventListener("keydown", e => {
   const t = e.target;
   if ((e.key === "Enter" || e.key === " ") && t.matches && t.matches(".boss,tr.row")) { e.preventDefault(); t.click(); }
@@ -791,7 +1200,7 @@ function saveFields(cat, no) {
     .catch(err => toast("没保存成：" + err.message));
 }
 $("#fCh").addEventListener("change", e => { S.ch = e.target.value; render(); });
-$("#fMonth").addEventListener("change", e => { S.month = e.target.value; render(); });
+$("#fMonth").addEventListener("change", e => { S.month = e.target.value; if (S.month) S.costMonth = S.month; render(); });
 $("#fWeek").addEventListener("change", e => { S.week = e.target.value; render(); });
 $("#rush").addEventListener("click", () => { S.rush = !S.rush; syncControls(); render(); });
 $("#refresh").addEventListener("click", () => load(true));
@@ -802,6 +1211,125 @@ $("#remindBtn").addEventListener("click", async () => {
     toast("提醒窗口已弹出");
   } catch (e) { toast("没弹出来：看板还是旧版，关掉黑窗口再双击「启动记单平台.bat」"); }
 });
+// 复制到剪贴板；弹窗开着时临时文本框放进弹窗里，不然选不中
+async function copyText(txt) {
+  try { await navigator.clipboard.writeText(txt); }
+  catch (e) {
+    const a = document.createElement("textarea"), host = document.querySelector("dialog[open]") || document.body;
+    a.value = txt; host.appendChild(a); a.select(); document.execCommand("copy"); a.remove();
+  }
+}
+
+// ---------- 导出结款：对账单（单个工程师）、结款单（按结款工程师）----------
+// 用户 2026-10-24：先找各个对账工程师对账，再统一找结款工程师结款；结款工程师自己的单直接结，不用对账
+const settleSubs = () => new Set(Object.values(SETTLE).flat());
+function settleRows() {   // 要结款的单：有老板、还欠钱；默认只要活已干完的（待结款）。不跟表格的类别、月份筛选
+  return ROWS.filter(x => x.boss && x.owe > 0 && (S.st.all ? x.status < 3 : x.status === 2) && (!S.st.week || x.week === S.st.week));
+}
+const amt = n => String(Math.round(n * 100) / 100);   // 350、350.5，不带千分位，方便发微信
+const stName = r => r.全称 || (!r.题目 || r.题目 === r.单号 ? r.单号 : r.单号 + r.题目);   // 有全称（用户给的单号原文）就原样用，否则单号紧接题目，跟台账一样
+function stBlock(list) {   // 几行「单号题目 金额」，两单以上再加一行「a+b=总数」
+  const sum = list.reduce((s, x) => s + x.owe, 0), lines = list.map(x => `${stName(x.r)} ${amt(x.owe)}`);
+  if (list.length > 1) lines.push(list.map(x => amt(x.owe)).join("+") + "=" + amt(sum));
+  return {text: lines.join("\n"), sum};
+}
+function settleText(kind, name) {   // recon = 一个工程师的对账单；settle = 结款工程师的结款单（分段 + 合计）
+  const rows = settleRows(), of = b => sortRows(rows.filter(x => x.boss === b));
+  if (kind === "recon") return stBlock(of(name)).text;
+  const parts = [], sums = [];
+  for (const b of [name, ...(SETTLE[name] || [])]) {
+    const list = of(b);
+    if (!list.length) continue;
+    const bl = stBlock(list);
+    parts.push(`【${b}】\n${bl.text}`); sums.push(bl.sum);
+  }
+  if (sums.length > 1) parts.push("合计 " + sums.map(amt).join("+") + "=" + amt(sums.reduce((a, b) => a + b, 0)));
+  return parts.join("\n\n");
+}
+function settleGroup(key) {   // 「settle|陈工」= 陈工结款单里的所有单；「recon|孙工」= 孙工一个人的单（范围同上面的勾选和结款周）
+  const [kind, name] = key.split("|"), bosses = kind === "settle" ? [name, ...(SETTLE[name] || [])] : [name];
+  return settleRows().filter(x => bosses.includes(x.boss));
+}
+function apiSettle(body) {
+  return fetch("/api/settle", {method: "POST", headers: {"X-Jidan": "1", "Content-Type": "application/json"}, body: JSON.stringify(body)})
+    .then(res => res.json().catch(() => ({})).then(j => {
+      if (!res.ok) throw new Error(j.错误 || "看板服务是旧版，关掉黑窗口再双击「启动记单平台.bat」");
+      return j.改动;
+    }));
+}
+function renderSettle() {
+  const box = $("#settleBody"), head = `<div class="dlg-h"><h3>导出结款</h3><button type="button" class="dlg-x" data-dlgclose aria-label="关闭">✕</button></div>`;
+  if (!("结款配置" in D)) { box.innerHTML = head + '<p class="cf-tip">看板服务是旧版：关掉黑窗口，再双击「启动记单平台.bat」就能导出结款。</p>'; return; }
+  const rows = settleRows(), by = b => rows.filter(x => x.boss === b), sum = l => l.reduce((s, x) => s + x.owe, 0);
+  const btn = (kind, name, label, ok) => `<button class="btn mini${ok ? " ok" : ""}" data-stpick="${kind}|${esc(name)}" aria-pressed="${S.st.pick === kind + "|" + name}">${label}</button>`;
+  const payBtn = (key, label) => `<button class="btn mini" data-stsettle="${esc(key)}" title="钱到账了：把这份里的单全部标成已结款">${label}</button>`;
+  const confirmBar = key => {   // 一键结款前再确认一次：哪份、几单、多少钱
+    if (S.st.confirm !== key) return "";
+    const l = settleGroup(key), undone = l.filter(x => x.status < 2).length;
+    return `<div class="cbar st-cbar">把 <b>${esc(key.split("|")[1])}</b> 这份 ${l.length} 单标成已结款，共 <b>${yuan(sum(l))}</b>？${undone ? `<span class="st-warn">其中 ${undone} 单活还没干完</span>` : ""}`
+      + `<button class="btn ok" data-stok="${esc(key)}">确定，钱到账了</button><button class="btn" data-stno>取消</button>`
+      + `<small>记成「看板手动」，下次 AI 跟你对话时会问是不是你点的；说不是会整批改回</small></div>`;
+  };
+  const row = (name, note, label, pay) => {
+    const l = by(name);
+    return l.length ? `<div class="st-row"><span><b>${esc(name)}</b>${note ? `<small>${note}</small>` : ""}</span><span class="st-n">${l.length} 单 ${yuan(sum(l))}</span>${btn("recon", name, label)}${pay ? payBtn("recon|" + name, "结款") : ""}</div>${pay ? confirmBar("recon|" + name) : ""}` : "";
+  };
+  const cards = Object.keys(SETTLE).map(o => {
+    const all = [o, ...(SETTLE[o] || [])].flatMap(by);
+    return all.length ? `<div class="st-card"><div class="st-h"><span><b>${esc(o)}</b> 结款<small>${all.length} 单</small></span><b class="st-sum">${yuan(sum(all))}</b>${btn("settle", o, "结款单", true)}${payBtn("settle|" + o, "一键结款")}</div>`
+      + confirmBar("settle|" + o) + row(o, "自己的单，直接结", "清单") + (SETTLE[o] || []).map(b => row(b, "先跟他对账", "对账单")).join("") + "</div>" : "";
+  }).join("");
+  const subs = settleSubs(), loose = [...new Set(rows.map(x => x.boss))].filter(b => !SETTLE[b] && !subs.has(b));
+  const looseHtml = loose.length ? `<div class="st-card st-loose"><div class="st-h"><span><b>还没归到结款工程师</b><small>在 配置/结款.json 里补，或跟 AI 说一声</small></span></div>${loose.map(b => row(b, "", "对账单", true)).join("")}</div>` : "";
+  const wk = new Map();
+  ROWS.forEach(x => { if (x.boss && x.owe > 0 && x.status < 3 && x.week) wk.set(x.week, x.weekKey); });
+  const weeks = [...wk].sort((a, b) => b[1] - a[1]).map(([w]) => w);
+  const [kind, name] = (S.st.pick || "|").split("|");
+  const text = S.st.pick ? settleText(kind, name) : "";
+  const title = !S.st.pick ? "点上面的「结款单 / 对账单」" : kind === "settle" ? `${name} 的结款单` : `${name} 的${SETTLE[name] ? "清单" : "对账单"}`;
+  box.innerHTML = head + `<div class="st-bar"><label class="st-chk"><input type="checkbox" id="stAll"${S.st.all ? " checked" : ""}>连还没干完的单也列上</label>
+      <select id="stWeek" aria-label="结款周"><option value="">全部结款周</option>${weeks.map(w => `<option value="${w}"${w === S.st.week ? " selected" : ""}>${w}${w === THIS_WEEK ? "（本周）" : ""}</option>`).join("")}</select>
+      <small class="muted">${S.st.all ? "列所有没结清的单" : "只列待结款（活干完了、钱没结）的单"}；不跟表格的类别、月份筛选，顺序跟表格排序一样</small></div>
+    <div class="st-list">${cards}${looseHtml}${cards || looseHtml ? "" : `<p class="cost-empty">没有${S.st.all ? "没结清" : "待结款"}的单</p>`}</div>
+    <div class="st-prev"><div class="st-prev-h"><b>${esc(title)}</b>${S.st.pick ? '<button class="btn ok" data-stcopyprev>复制</button>' : ""}</div>
+      <textarea id="stText" spellcheck="false" placeholder="点上面的按钮，这里出可以直接发微信的文字，也可以先改再复制">${esc(text || (S.st.pick ? "（这个范围里没有单）" : ""))}</textarea></div>`;
+}
+function openSettle() {
+  const has = b => settleRows().some(x => x.boss === b);
+  S.st.pick = null;
+  if (S.boss && (has(S.boss) || SETTLE[S.boss])) S.st.pick = (SETTLE[S.boss] ? "settle|" : "recon|") + S.boss;   // 表格正按某个老板看：直接出他的
+  if (!S.st.pick) { const o = Object.keys(SETTLE).find(o => [o, ...(SETTLE[o] || [])].some(has)); if (o) S.st.pick = "settle|" + o; }
+  renderSettle();
+  if (!$("#settleDlg").open) $("#settleDlg").showModal();
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-settle-open],[data-stpick],[data-stcopyprev],[data-stsettle],[data-stok],[data-stno]");
+  if (!t) return;
+  if (t.matches("[data-settle-open]")) openSettle();
+  else if (t.matches("[data-stsettle]")) { S.st.confirm = t.dataset.stsettle; renderSettle(); }   // 先弹确认条
+  else if (t.matches("[data-stno]")) { S.st.confirm = null; renderSettle(); }
+  else if (t.matches("[data-stok]")) {   // 确认后一批单一起标成已结款
+    const key = t.dataset.stok, list = settleGroup(key), name = key.split("|")[1];
+    const money = yuan(list.reduce((s, x) => s + x.owe, 0));
+    t.disabled = true;
+    apiSettle({标签: name + (key.startsWith("settle|") ? " 结款" : ""), 单: list.map(x => ({类别: x.r.类别, 单号: x.r.单号}))})
+      .then(c => { S.st.confirm = null; toast(c ? `已结款：${name} ${list.length} 单 ${money}` : "这些单本来就结过了"); lastTxt = ""; return load(); })
+      .then(() => renderSettle())
+      .catch(err => { toast("没结成：" + err.message); t.disabled = false; });
+  }
+  else if (t.matches("[data-stpick]")) {   // 点一下就出文字并复制
+    S.st.pick = t.dataset.stpick; renderSettle();
+    const txt = settleText(...S.st.pick.split("|"));
+    if (txt) copyText(txt).then(() => toast("已复制，可以直接粘进微信"));
+  }
+  else copyText($("#stText").value).then(() => toast("已复制"));
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "stAll") { S.st.all = e.target.checked; renderSettle(); }
+  else if (e.target.id === "stWeek") { S.st.week = e.target.value; renderSettle(); }
+});
+$("#settleDlg").addEventListener("close", () => { S.st.pick = null; S.st.confirm = null; });
+
 $("#copy").addEventListener("click", async () => {
   const cats = D ? D.类别 || {} : {};
   const head = ["单号", "题目", "类别", "老板", "渠道", "日期", "总价", "未结账", "状态", "备注"];
@@ -811,9 +1339,7 @@ $("#copy").addEventListener("click", async () => {
             x.total ?? "", x.owe, STATUS[x.status], (r.备注 || "").replace(/\s+/g, " ")].join("\t");
   })];
   lines.push(["合计 " + CUR.length + " 单", "", "", "", "", "", CUR.reduce((s, x) => s + (x.total || 0), 0), CUR.reduce((s, x) => s + x.owe, 0), "", ""].join("\t"));
-  const txt = lines.join("\n");
-  try { await navigator.clipboard.writeText(txt); }
-  catch (e) { const a = document.createElement("textarea"); a.value = txt; document.body.appendChild(a); a.select(); document.execCommand("copy"); a.remove(); }
+  await copyText(lines.join("\n"));
   toast(`已复制 ${CUR.length} 单，可直接粘进 Excel 或微信`);
 });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });

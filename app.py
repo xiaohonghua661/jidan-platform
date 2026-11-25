@@ -32,9 +32,18 @@ class H(BaseHTTPRequestHandler):
         if path == "/api/orders":
             try:
                 cats, chans = ledger.load_cfg()  # 每次重读配置，改了配置不用重启看板
+                # 配了「工作台」的店铺，回本成交额从只读快照读（读不到就没有这一项，前端退回订单库口径）
+                ccfg = ledger.load_cost_cfg()
+                shop_sales = {}
+                for s in ccfg.get("店铺", {}):
+                    rev = ledger.shop_revenue(s, ccfg)
+                    if rev is not None:
+                        shop_sales[s] = rev
                 # 「8086」这种纯数字键在浏览器里会被排到最前，顺序单独给一份
                 self._json(200, {"类别": cats, "类别顺序": list(cats), "渠道": chans, "订单": ledger.all_rows(),
-                                 "手动改动": ledger.pending_manual()})
+                                 "手动改动": ledger.pending_manual(),
+                                 "成本": ledger.all_costs(), "成本配置": ccfg, "店铺成交": shop_sales,
+                                 "结款配置": ledger.load_settle_cfg()})
             except Exception as e:  # 配置或数据文件读坏了，也给页面一个说法
                 self._json(500, {"错误": f"{type(e).__name__}: {e}"})
         elif path in ("/", "/index.html"):
@@ -61,6 +70,33 @@ class H(BaseHTTPRequestHandler):
                     e = ledger.manual_set(cat, no, stage=body.get("环节"), value=ledger.VALUE_NAME[body["值"]])
                 else:
                     raise ValueError("值只能是 完成 / 不做 / 未做")
+                self._json(200, {"ok": True, "改动": e})
+            except (ValueError, RuntimeError) as e:
+                self._json(400, {"错误": str(e)})
+            return
+        if path == "/api/settle":
+            # 看板上一键结款：一批单的「结款」一起标成完成，只记一笔「看板手动」，等 AI 跟用户确认
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(min(n, 100000)).decode("utf-8") or "{}")
+                items = [(str(x.get("类别") or ""), str(x.get("单号") or "")) for x in body.get("单") or []]
+                if not items:
+                    raise ValueError("没有要结款的单")
+                e = ledger.manual_settle(items, str(body.get("标签") or "一键结款")[:40])
+                self._json(200, {"ok": True, "改动": e})
+            except (ValueError, RuntimeError) as e:
+                self._json(400, {"错误": str(e)})
+            return
+        if path == "/api/cost":
+            # 看板上记一笔私单成本 / 作废一笔：同样记「看板手动」，等 AI 跟用户确认
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+                body = json.loads(self.rfile.read(min(n, 10000)).decode("utf-8") or "{}")
+                if body.get("操作") == "新增":
+                    data = {k: str(body[k]) for k in ledger.COST_FIELDS if body.get(k) not in (None, "")}
+                    e = ledger.manual_cost("新增", data=data)
+                else:
+                    e = ledger.manual_cost(str(body.get("操作") or ""), cid=str(body.get("编号") or ""))
                 self._json(200, {"ok": True, "改动": e})
             except (ValueError, RuntimeError) as e:
                 self._json(400, {"错误": str(e)})

@@ -5,4 +5,11 @@ __pycache__/
 .ledger.lock
 .提醒状态.json
 手动改动.jsonl
+结款记录.jsonl
+# 以后新加的运行记录也挡住
+*.jsonl
+成本库/
+订单库/
 接单/
+配置/工作台快照/
+*.sqlite

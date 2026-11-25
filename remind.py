@@ -83,7 +83,7 @@ def analyze(r, cats, order, today):
                 work_done = False
                 if nxt is None:
                     nxt = s + ("（待定）" if st == "pend" else "")
-    paid = env.get("结款") is True
+    paid = env.get("结款") in (True, False)   # 结款标 X = 这单不单独收钱，按已结清算
     status = 3 if paid else 2 if (has_work and work_done) else 1 if done_any else 0
     if r.get("价格") is not None:
         total = r["价格"]
@@ -97,6 +97,53 @@ def analyze(r, cats, order, today):
             "due": due, "due_days": (due - today).days if due else None,
             "boss": r.get("老板") or "", "cat": (cats.get(cat) or {}).get("名称", cat),
             "cat_idx": order.index(cat) if cat in order else 0}
+
+
+def settle_times():
+    """各单最近一次结款打钩的时间：ledger.py 写入时记的结款记录.jsonl，加看板手动打钩的手动改动.jsonl。"""
+    t = {}
+
+    def put(e):
+        k, v = (e.get("类别"), e.get("单号")), e.get("时间") or ""
+        if v > t.get(k, ""):
+            t[k] = v
+    try:
+        for line in ledger.SETTLE_LOG.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                put(json.loads(line))
+    except (OSError, ValueError):
+        pass
+    for e in ledger.read_manual():
+        if e.get("环节") == "结款" and e.get("新值") is True and e.get("状态") != "用户说不是本人":
+            put(e)
+    return t
+
+
+def last_settled(xs):
+    """老板 → (上次结款那天, 是不是估的)。没有打钩时间的单拿最后更新时间估，只会比实际晚。"""
+    st, last = settle_times(), {}
+    for x in xs:
+        r = x["r"]
+        if (r.get("环节") or {}).get("结款") is not True:
+            continue
+        ts = st.get((r.get("类别"), r["单号"]))
+        approx = ts is None
+        try:
+            day = datetime.date.fromisoformat((ts or r.get("更新") or "")[:10])
+        except ValueError:
+            continue
+        if x["boss"] not in last or day > last[x["boss"]][0]:
+            last[x["boss"]] = (day, approx)
+    return last
+
+
+def since_text(v, today):
+    if not v:
+        return "没结过款"
+    n = (today - v[0]).days
+    if v[1] and n >= 1:   # 估的那天只会比实际晚，所以写「以上」
+        return f"上次结款 {n} 天以上"
+    return "上次结款 " + ("今天" if n <= 0 else "昨天" if n == 1 else f"{n} 天前")
 
 
 def build(cfg=None, today=None):
@@ -123,17 +170,110 @@ def build(cfg=None, today=None):
     doing = sorted((x for x in xs if x["status"] == 1 and not hot(x)), key=key)
     todo = sorted((x for x in xs if x["status"] == 0 and not hot(x) and not kaiti(x)), key=key)
     waiting = sorted((x for x in xs if kaiti(x)), key=key)
+    noprice = sorted((x for x in xs if not ledger.has_price(x["r"])), key=key)   # 缺价格要先问用户
     bosses = {}
     for x in xs:
-        if x["status"] == 2:
+        # 自己接的私单不进催款（用户 2026-11-25：「自己的不用管啊，自己的已经结款了都」）；
+        # 老板空着的（如直客直客单）照旧要催，不算自己
+        if x["status"] == 2 and x["boss"] != "自己":
             b = bosses.setdefault(x["boss"], {"name": x["boss"], "n": 0, "owe": 0, "nos": []})
             b["n"] += 1
             b["owe"] += x["owe"]
             b["nos"].append(x["r"]["单号"])
+    last = last_settled(xs)
+    for b in bosses.values():
+        b["since"] = since_text(last.get(b["name"]), today)
     collect = sorted(bosses.values(), key=lambda b: (-b["owe"], b["name"] == ""))
-    return {"today": today, "urgent": urgent, "doing": doing, "todo": todo, "waiting": waiting, "collect": collect,
+    return {"today": today, "urgent": urgent, "doing": doing, "todo": todo, "waiting": waiting, "noprice": noprice, "collect": collect,
             "collect_n": sum(b["n"] for b in collect), "collect_owe": sum(b["owe"] for b in collect),
-            "work_n": len(urgent) + len(doing) + len(todo)}
+            "work_n": len(urgent) + len(doing) + len(todo), "promo": build_promo(today)}
+
+
+# ---------------- 推广：每天开始推广（用户 2026-10-21） ----------------
+def span(c):
+    """一笔推广费管的日子：从日期起算 N 天；天数 0（用完为止）和 1 都只算当天。"""
+    b = parse_day(c.get("日期"))
+    return b, b + datetime.timedelta(days=max(int(c.get("天数", 1)), 1) - 1)
+
+
+def build_promo(today):
+    """「每天推广」的店铺今天记没记推广费、多天的投放到哪天、本月花了多少、回本没有（只读 成本库和订单库）。"""
+    cfg = ledger.load_cost_cfg()
+    costs = [c for c in ledger.all_costs() if parse_day(c.get("日期"))]
+    shops = []
+    for name, sc in cfg["店铺"].items():
+        mine = [(c, *span(c)) for c in costs if c.get("店铺") == name]
+        ends = [e for c, b, e in mine if c.get("天数", 1) > 1]
+        last = max(mine, key=lambda t: (t[0]["日期"], t[0]["id"]))[0] if mine else None
+        on = [c for c, b, e in mine if b <= today <= e]
+        shops.append({"name": name, "daily": bool(sc.get("每天推广")), "on": on,
+                      "end": max(ends) if ends else None, "last": last,
+                      # 上一笔是「用完为止」：不知道花完没有，提醒看一眼，花完了再开
+                      "open": bool(last and last.get("天数", 1) == 0 and not on),
+                      # 上一笔就是投好几天的那笔（之后没再续），到期才提醒续不续
+                      "run": bool(last and last.get("天数", 1) > 1)})
+    month = today.strftime("%Y%m")
+    plats = {}
+    for c in costs:
+        if c["日期"][:6] == month:
+            p = c.get("平台") or c["店铺"]
+            plats[p] = plats.get(p, 0) + c["金额"]
+    rs = ledger.roi(month)
+    # 不用每天推广的店铺：投好几天的列投放中、昨天刚到期的（到期提醒续不续）；用完为止的列出来看一眼
+    yest = today - datetime.timedelta(days=1)
+    runs = [s for s in shops if not s["daily"] and (s["open"] or (s["run"] and s["end"] >= yest))]
+    daily = [s for s in shops if s["daily"]]
+    return {"shops": shops, "daily": daily, "runs": runs,
+            "todo": [s for s in daily if not s["on"] and not s["open"]],
+            "check": [s for s in daily if s["open"]],
+            "due": [s for s in runs if s["run"] and s["end"] <= today],
+            "total": sum(plats.values()), "plats": sorted(plats.items(), key=lambda kv: -kv[1]),
+            "got": sum(p["收"] for p in rs.values()), "got_n": sum(p["单"] for p in rs.values())}
+
+
+def cost_short(c):
+    return f"{c.get('方式') or ''} ¥{c['金额']:g}".strip()
+
+
+def promo_state(s, today):
+    """一个店铺今天的推广情况 → (文字, 颜色)。"""
+    md = lambda d: f"{d.month}-{d.day:02d}"
+    last = s["last"]
+    if s["open"]:
+        return f"上次 {md(parse_day(last['日期']))} {cost_short(last)}，用完为止：看看花完没有，花完了再开", C["amber"]
+    if s["daily"]:
+        if s["on"]:
+            return "已推广：" + "，".join(cost_short(c) for c in s["on"]), C["green"]
+        return "还没推广" + (f"（上次 {md(parse_day(last['日期']))} {cost_short(last)}）" if last else ""), C["red"]
+    d = (s["end"] - today).days
+    if d < 0:
+        return f"投放 {md(s['end'])} 到期了，续不续？", C["red"]
+    if d == 0:
+        return f"投放今天到期（{md(s['end'])}），续不续？", C["red"]
+    if d == 1:
+        return f"投放明天到期（{md(s['end'])}）", C["amber"]
+    return f"投放中，到 {md(s['end'])}（还剩 {d} 天）", C["green"]
+
+
+def promo_total(p):
+    return f"本月推广 {yuan(p['total'])}" + ("：" + " · ".join(f"{k} {yuan(v)}" for k, v in p["plats"]) if p["plats"] else "")
+
+
+def promo_head(p):
+    if p["todo"]:
+        return f"还有 {len(p['todo'])} 个店没推广"
+    if p["due"]:
+        return "有投放到期，续不续？"
+    if p["check"]:
+        return f"{len(p['check'])} 个店看看推广费花完没有"
+    return "都推广了"
+
+
+def promo_roi(p):
+    """本月回本：推广来的私单（订单标了来源）收入减推广花费。"""
+    net = p["got"] - p["total"]
+    return (f"推广来的私单 {p['got_n']} 单 {yuan(p['got'])}，"
+            + (f"已回本，净赚 {yuan(net)}" if net >= 0 else f"还差 {yuan(-net)} 回本"))
 
 
 def yuan(v):
@@ -179,7 +319,10 @@ def no_of(x):
 
 
 def summary(d):
-    parts = [f"要做 {d['work_n']} 单"]
+    parts = [f"还没推广 {'、'.join(s['name'] for s in d['promo']['todo'])}"] if d["promo"]["todo"] else []
+    if d["noprice"]:
+        parts.append(f"缺价格 {len(d['noprice'])} 单")
+    parts.append(f"要做 {d['work_n']} 单")
     if d["urgent"]:
         parts.append(f"急 {len(d['urgent'])}")
     if d["collect_n"]:
@@ -191,7 +334,15 @@ def summary(d):
 
 def as_text(d):
     out = [f"记单提醒 · {day_label(d['today'])}", summary(d), ""]
-    for name, xs in (("急单 / 快到期", d["urgent"]), ("进行中", d["doing"]), ("未开始", d["todo"]),
+    p = d["promo"]
+    if p["daily"] or p["runs"] or p["total"]:
+        out.append("【今天开始推广】" + promo_head(p))
+        for s in p["daily"] + p["runs"]:
+            out.append(f"  {s['name']:<6} {promo_state(s, d['today'])[0]}")
+        out.append("  " + promo_total(p))
+        out.append("  " + promo_roi(p))
+        out.append("")
+    for name, xs in (("没填价格（先问清楚多少钱）", d["noprice"]), ("急单 / 快到期", d["urgent"]), ("进行中", d["doing"]), ("未开始", d["todo"]),
                      ("等开题报告（开题过了才能做）", d["waiting"])):
         if xs:
             out.append(f"【{name}】{len(xs)} 单")
@@ -205,7 +356,7 @@ def as_text(d):
     if d["collect"]:
         out.append(f"【待结款，可以催了】{d['collect_n']} 单 {yuan(d['collect_owe'])}")
         for b in d["collect"]:
-            out.append(f"  {b['name'] or '自己'}  {b['n']} 单  {yuan(b['owe'])}  {'、'.join(b['nos'])}")
+            out.append(f"  {b['name'] or '没填老板'}  {b['n']} 单  {yuan(b['owe'])}  {b['since']}  {'、'.join(b['nos'])}")
     return "\n".join(out).rstrip()
 
 
@@ -392,14 +543,48 @@ def popup(d, cfg, snap=None):
             f = tk.Frame(card, bg=C["card"])
             f.pack(fill="x", padx=int(14 * S), pady=int(3 * S))
             f.columnconfigure(1, weight=1)
-            tk.Label(f, text=b["name"] or "自己", font=(FONT, 10, "bold"), fg=C["text"], bg=C["card"], width=8,
+            tk.Label(f, text=b["name"] or "没填老板", font=(FONT, 10, "bold"), fg=C["text"], bg=C["card"], width=8,
                      anchor="w").grid(row=0, column=0, sticky="w")
-            tk.Label(f, text=f"{b['n']} 单　" + ellipsis("、".join(b["nos"]), 40), font=(FONT, 9), fg=C["muted"],
+            tk.Label(f, text=f"{b['n']} 单　" + ellipsis("、".join(b["nos"]), 28), font=(FONT, 9), fg=C["muted"],
                      bg=C["card"], anchor="w").grid(row=0, column=1, sticky="we")
-            tk.Label(f, text=yuan(b["owe"]), font=(FONT, 10, "bold"), fg=C["amber"], bg=C["card"]).grid(
+            tk.Label(f, text=b["since"], font=(FONT, 9), fg=C["text2"], bg=C["card"]).grid(
                 row=0, column=2, sticky="e", padx=(int(8 * S), 0))
+            tk.Label(f, text=yuan(b["owe"]), font=(FONT, 10, "bold"), fg=C["amber"], bg=C["card"]).grid(
+                row=0, column=3, sticky="e", padx=(int(8 * S), 0))
         return draw
 
+    p = d["promo"]
+
+    def promo_row(s):
+        def draw(card):
+            f = tk.Frame(card, bg=C["card"])
+            f.pack(fill="x", padx=int(14 * S), pady=int(3 * S))
+            f.columnconfigure(1, weight=1)
+            tk.Label(f, text=s["name"], font=(FONT, 10, "bold"), fg=C["text"], bg=C["card"], width=8,
+                     anchor="w").grid(row=0, column=0, sticky="w")
+            txt, col = promo_state(s, d["today"])
+            tk.Label(f, text=txt, font=(FONT, 10), fg=col, bg=C["card"], anchor="w").grid(row=0, column=1, sticky="we")
+        return draw
+
+    def promo_foot(card):
+        net = p["got"] - p["total"]
+        tk.Label(card, text=promo_roi(p), font=(FONT, 9, "bold"), fg=C["green"] if net >= 0 else C["amber"],
+                 bg=C["card"], anchor="w").pack(anchor="w", padx=int(14 * S), pady=(int(6 * S), 0))
+        tk.Label(card, text=promo_total(p) + "　·　推广完在看板「私单成本」里记一笔", font=(FONT, 9), fg=C["faint"],
+                 bg=C["card"], anchor="w", justify="left", wraplength=int(580 * S)).pack(
+            anchor="w", padx=int(14 * S), pady=(int(2 * S), 0))
+
+    def promo_section():
+        if p["daily"] or p["runs"] or p["total"]:
+            color = C["red"] if p["todo"] or p["due"] else C["amber"] if p["check"] else C["green"]
+            section("今天开始推广", color, promo_head(p),
+                    [promo_row(s) for s in p["daily"] + p["runs"]] + [promo_foot], limit=20)
+
+    promo_first = bool(p["todo"] or p["due"] or p["check"])   # 有推广的事就排最前，都推广了放最后
+    if promo_first:
+        promo_section()
+    if d["noprice"]:
+        section("没填价格（先问清楚多少钱）", C["red"], f"{len(d['noprice'])} 单", [order_row(x) for x in d["noprice"]])
     if d["urgent"]:
         section("急单 / 快到期", C["red"], f"{len(d['urgent'])} 单", [order_row(x) for x in d["urgent"]])
     if d["doing"]:
@@ -412,7 +597,9 @@ def popup(d, cfg, snap=None):
         section("待结款，可以催了", C["amber"], f"{d['collect_n']} 单 {yuan(d['collect_owe'])}",
                 [boss_row(b) for b in d["collect"]])
     if not (d["work_n"] or d["collect"]):
-        tk.Label(body, text="今天没有要做的单", font=(FONT, 12), fg=C["muted"], bg=C["bg"]).pack(pady=int(60 * S))
+        tk.Label(body, text="今天没有要做的单", font=(FONT, 12), fg=C["muted"], bg=C["bg"]).pack(pady=int(40 * S))
+    if not promo_first:
+        promo_section()
     tk.Frame(body, bg=C["bg"], height=int(14 * S)).pack()
 
     if snap:
@@ -434,7 +621,9 @@ def small(d, cfg, snap=None):
         root.attributes("-topmost", True)
     box = tk.Frame(root, bg=C["card"])
     box.pack(fill="both", expand=True, padx=1, pady=1)
-    tk.Frame(box, bg=C["red"] if d["urgent"] else C["accent"], width=int(5 * S)).pack(side="left", fill="y")
+    p = d["promo"]
+    promo_alert = bool(p["todo"] or p["due"])
+    tk.Frame(box, bg=C["red"] if d["urgent"] or promo_alert else C["accent"], width=int(5 * S)).pack(side="left", fill="y")
     main = tk.Frame(box, bg=C["card"])
     main.pack(side="left", fill="both", expand=True, padx=(int(14 * S), int(12 * S)), pady=(int(10 * S), int(12 * S)))
 
@@ -448,9 +637,25 @@ def small(d, cfg, snap=None):
     x_btn = tk.Label(top, text="✕", font=(FONT, 10), fg=C["faint"], bg=C["card"], cursor="hand2")
     x_btn.pack(side="right")
     x_btn.bind("<Button-1>", lambda e: act("close"))
-    head = f"还有 {d['work_n']} 单要做" + (f"，其中急 {len(d['urgent'])} 单" if d["urgent"] else "")
-    tk.Label(main, text=head, font=(FONT, 12, "bold"), fg=C["red"] if d["urgent"] else C["text"], bg=C["card"]).pack(
-        anchor="w", pady=(int(4 * S), 0))
+    if d["work_n"] or not promo_alert:
+        head = f"还有 {d['work_n']} 单要做" + (f"，其中急 {len(d['urgent'])} 单" if d["urgent"] else "")
+    else:
+        head = "今天还没推广" if p["todo"] else "有推广投放到期"
+    tk.Label(main, text=head, font=(FONT, 12, "bold"),
+             fg=C["red"] if d["urgent"] or (promo_alert and not d["work_n"]) else C["text"],
+             bg=C["card"]).pack(anchor="w", pady=(int(4 * S), 0))
+    if p["todo"]:
+        tk.Label(main, text="今天还没推广：" + "、".join(s["name"] for s in p["todo"]), font=(FONT, 9, "bold"),
+                 fg=C["red"], bg=C["card"]).pack(anchor="w")
+    for s in p["due"]:
+        tk.Label(main, text=f"{s['name']} {promo_state(s, d['today'])[0]}", font=(FONT, 9, "bold"),
+                 fg=C["red"], bg=C["card"]).pack(anchor="w")
+    if p["check"]:
+        tk.Label(main, text="看看推广费花完没有：" + "、".join(s["name"] for s in p["check"]), font=(FONT, 9),
+                 fg=C["amber"], bg=C["card"]).pack(anchor="w")
+    if d["noprice"]:
+        tk.Label(main, text=f"{len(d['noprice'])} 单没填价格，先问清楚多少钱", font=(FONT, 9, "bold"),
+                 fg=C["red"], bg=C["card"]).pack(anchor="w")
     if d["collect_n"]:
         tk.Label(main, text=f"待结款 {d['collect_n']} 单 {yuan(d['collect_owe'])}，可以催了", font=(FONT, 9),
                  fg=C["amber"], bg=C["card"]).pack(anchor="w")
@@ -599,10 +804,13 @@ def main():
     if a.small:
         mode = "small"
     elif a.auto:
-        if not (d["work_n"] or d["collect_n"]):
-            mode = None                      # 没事要做就不打扰
+        p = d["promo"]
+        busy = d["work_n"] or d["collect_n"] or d["noprice"] or p["todo"] or p["due"]
+        if st.get("弹窗日") != today:
+            # 当天第一次：有事就弹大窗；「看看推广费花完没有」也算，每天开始推广要提醒到
+            mode = "popup" if busy or p["check"] else None
         else:
-            mode = "popup" if st.get("弹窗日") != today else "small"
+            mode = "small" if busy else None   # 之后只在有事时弹小窗，没事就不打扰
     else:
         mode = "popup"                       # 手动提醒总是大窗
     if a.dry:
